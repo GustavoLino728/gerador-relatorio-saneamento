@@ -1,16 +1,10 @@
 import pandas as pd
 
 SHEET_PATH="../data/Listagem das NC's - Agua e Esgoto.xlsx"
-
 spreadsheet = pd.ExcelFile(SHEET_PATH)
 
 inspections = pd.read_excel(spreadsheet, sheet_name="Fiscalizações")
 non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades")
-eta_water_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs ETA")  
-eea_water_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs EEA") 
-eea_water_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs REL e RAP")   
-ete_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs ETE")  
-eee_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs EEE")  
 
 def get_this_report():
     not_done_reports = inspections[inspections["Relatório Gerado"] == "Gerar"]
@@ -34,4 +28,4 @@ def get_non_conformities():
 print(get_this_report())
 
 # with pd.ExcelWriter(SHEET_PATH, mode="a", if_sheet_exists="replace", engine="openpyxl") as writer:
-#     inspections.to_excel(writer, sheet_name="Fiscalizações", index=False)
+#     inspections.to_excel(writer, sheet_name="Fiscalizações", index=False)
