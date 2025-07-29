@@ -4,6 +4,7 @@ from excel import get_inspections_data
 REPORT_DIR = "../reports/"
 REPORT_NAME = "RELATÓRIO MODELO"
 REPORT_EXT = ".docx"
+
 def next_filename():
     for i in range(1, 1000):
         name = f"{REPORT_NAME}{'' if i == 0 else f' - {i}'}{REPORT_EXT}"
@@ -13,8 +14,8 @@ def next_filename():
 
 def search_paragraph(document, text):
     paragraphs_found_by_search = []
+    print(">>> Busca no documento iniciada")
     for i, p in enumerate(document.paragraphs):
-        print(">>> Busca no documento iniciada")
         if text in p.text:
             paragraphs_found_by_search.append(i)
             print(">>> Uma ocorrencia foi encontrada")

@@ -14,12 +14,12 @@ def generate_report():
     last_position = document.paragraphs[search_non_conformity[-1]]
 
     # resize_images()
+
     list_of_images_path = get_images_from_dir()
     divide_images(document, last_position, list_of_images_path)
     substitute_placeholders(document)
-
+    
     print(">>> Alterações Concluidas")
 
-    new_archive = next_filename() 
-    document.save(new_archive)   
-
+    new_archive = next_filename()
+    document.save(new_archive) 
