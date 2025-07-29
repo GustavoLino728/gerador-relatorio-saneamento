@@ -16,28 +16,6 @@ Este projeto realiza a **automação da geração de relatórios técnicos** a p
 
 ---
 
-## 📁 Estrutura do Projeto
-
-Automacao-Relatorios-ARPE/
-├── assets/ # Pasta com as imagens das não conformidades
-├── data/
-│ ├── Listagem das NC's.xlsx # Planilha com dados de fiscalizações
-│ └── RELATÓRIO MODELO.docx # Modelo de documento base
-├── src/
-│ ├── excel.py # Módulo de leitura e filtragem de dados da planilha
-│ ├── images.py # Módulo de processamento das imagens e geração de tabelas
-│ ├── report.py # Lógica principal de geração do relatório
-│ ├── utils.py # Funções auxiliares (ex: substituição de variáveis)
-│ └── main.py # Script principal que executa toda a automação
-├── README.md
-└── requirements.txt
-
-yaml
-Copiar
-Editar
-
----
-
 ## 📊 Requisitos da Planilha
 
 - A aba `Fiscalizações` deve conter a coluna: `Relatório Gerado` (valores booleanos).
@@ -56,63 +34,48 @@ Editar
 ```bash
 git clone https://github.com/seu-usuario/Automacao-Relatorios-ARPE.git
 cd Automacao-Relatorios-ARPE
+```
 
-Crie e ative um ambiente virtual (recomendado):
+2. **Crie e ative um ambiente virtual, e instale as dependencias (recomendado):**
 
-bash
-Copiar
-Editar
+```bash
 python -m venv venv
 venv\Scripts\activate no Windows  # ou source/venv/bin/activate no Linux
-Instale as dependências:
-
-bash
-Copiar
-Editar
 pip install -r requirements.txt
-Coloque suas imagens em assets/ e sua planilha atualizada em data/.
+```
 
-Execute o script principal:
+3. **Prepare os dados**:
+- Coloque as imagens das não conformidades na pasta assets/.
+- Certifique-se de que sua planilha atualizada (Listagem das NC's.xlsx) e o modelo (RELATÓRIO MODELO.docx) estejam na pasta data/.
 
-bash
-Copiar
-Editar
+4. **Execute o script principal**:
+
+```bash
 python src/main.py
-📦 Dependências
-pandas
+```
 
-openpyxl
-
-python-docx
-
-Pillow
+## 📦 Dependências
+- pandas
+- openpyxl
+- python-docx
+- Pillow
 
 Todas estão listadas no arquivo requirements.txt.
 
-✅ Resultados Esperados
-Um documento Word (.docx) preenchido automaticamente com:
+## ✅ Resultados Esperados
+- Um documento Word (.docx) preenchido automaticamente com:
+- Dados da planilha substituindo variáveis do modelo
+- Tabelas com fotos das não conformidades e suas respectivas legendas
+- Layout e espaçamento adequados para impressão ou compartilhamento digital
 
-Dados da planilha substituindo variáveis do modelo
+## 💡 Melhorias Futuras
+- Exportação direta em PDF
+- Interface gráfica (GUI) para seleção de planilha e pasta
+- Validação automática de correspondência entre fotos e nomes da planilha
+- Integração com Google Drive ou Google Sheets
 
-Tabelas com fotos das não conformidades e suas respectivas legendas
-
-Layout e espaçamento adequados para impressão ou compartilhamento digital
-
-💡 Melhorias Futuras
-Exportação direta em PDF
-
-Interface gráfica (GUI) para seleção de planilha e pasta
-
-Validação automática de correspondência entre fotos e nomes da planilha
-
-Integração com Google Drive ou Google Sheets
-
-🧑‍💻 Autor
+## 🧑‍💻 Autor
 Desenvolvido por Gustavo Lino · https://www.linkedin.com/in/gustavolinoaraujo ·
 
-📄 Licença
+## 📄 Licença
 Este projeto está sob a licença MIT.
-
-yaml
-Copiar
-Editar
