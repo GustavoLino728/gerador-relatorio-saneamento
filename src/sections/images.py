@@ -60,7 +60,7 @@ def create_table_images(document, last_position, list_of_images_path, df_non_con
     title._element.addnext(space_after_element)
     space_after_element.addnext(images_table._element)
 
-    set_borders_images(images_table)
+    set_borders_table(images_table)
     print(">>> Tabela de Fotos Criada")
 
     return images_table
@@ -72,18 +72,29 @@ def divide_images(document, last_position, list_of_images_path):
         last_position = create_table_images(document, last_position, table_images, get_non_conformities())
         print(f">>> {i}° bloco concluido")
 
-def set_borders_images(table):
+def set_borders_table(table):
+    """
+    Adiciona bordas visíveis a uma tabela do python-docx.
+    Pode ser usada para qualquer tabela de documento Word.
+    """
     tbl = table._element
-    tblPr = tbl.xpath('./w:tblPr')[0]
 
+    # Verifica se <w:tblPr> existe, senão cria
+    tblPr_list = tbl.xpath('./w:tblPr')
+    if tblPr_list:
+        tblPr = tblPr_list[0]
+    else:
+        tblPr = OxmlElement('w:tblPr')
+        tbl.insert(0, tblPr)
+
+    # Cria as bordas
     tblBorders = OxmlElement('w:tblBorders')
-
     for border_name in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
         border = OxmlElement(f'w:{border_name}')
-        border.set(qn('w:val'), 'single')   
-        border.set(qn('w:sz'), '8')        
-        border.set(qn('w:space'), '0')       
-        border.set(qn('w:color'), '000000')   
+        border.set(qn('w:val'), 'single')    # tipo da borda
+        border.set(qn('w:sz'), '8')          # espessura
+        border.set(qn('w:space'), '0')       # espaço entre borda e conteúdo
+        border.set(qn('w:color'), '000000')  # cor preta
         tblBorders.append(border)
 
     tblPr.append(tblBorders)

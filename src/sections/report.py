@@ -1,10 +1,9 @@
 from docx import Document
 from images import get_images_from_dir
 from images import divide_images
-from utils import substitute_placeholders
+from utils import substitute_placeholders, next_filename, search_paragraph
 # from images import resize_images
-from utils import next_filename
-from utils import search_paragraph
+from tables import create_non_conformities_table
 
 document = Document(r"../data/RELATÓRIO MODELO.docx")
 
@@ -12,8 +11,9 @@ def generate_report():
     # Busca a Sessão pra inserir as imagens
     search_non_conformity = search_paragraph(document,"APÊNDICE 1 - NÃO CONFORMIDADES")
     last_position = document.paragraphs[search_non_conformity[-1]]
-
     # resize_images()
+
+    create_non_conformities_table(document)
 
     list_of_images_path = get_images_from_dir()
     divide_images(document, last_position, list_of_images_path)

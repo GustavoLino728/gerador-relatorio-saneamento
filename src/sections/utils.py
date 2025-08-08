@@ -1,5 +1,8 @@
 import os
 from excel import get_inspections_data
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt, RGBColor
 
 REPORT_DIR = "../reports/"
 REPORT_NAME = "RELATÓRIO MODELO"
@@ -37,3 +40,14 @@ def substitute_placeholders(document):
                         placeholder = f"{{{{{key}}}}}"
                         if placeholder in p.text:
                             p.text = p.text.replace(placeholder, str(value))
+                
+def apply_background_color(color_hex: str):
+    """
+    Cria um elemento de sombreado de célula com cor de fundo.
+    Ex: 'D9D9D9' para cinza claro.
+    """
+    shading_elm = OxmlElement('w:shd')
+    shading_elm.set(qn('w:val'), 'clear')
+    shading_elm.set(qn('w:color'), 'auto')
+    shading_elm.set(qn('w:fill'), color_hex)
+    return shading_elm
