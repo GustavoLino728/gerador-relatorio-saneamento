@@ -37,14 +37,14 @@ def create_table_images(document, last_position, list_of_images_path, df_non_con
         subtitle_line = image_line + 1
         collum = i % 2
 
-        images_table.cell(image_line, collum).paragraphs[0].add_run().add_picture(list_of_images_path[i], width=Inches(5))
+        images_table.cell(image_line, collum).paragraphs[0].add_run().add_picture(list_of_images_path[i], width=Inches(4.3))
         image_name = os.path.splitext(os.path.basename(list_of_images_path[i]))[0]
         line = df_non_conformities[df_non_conformities["Nome da Foto"] == image_name]
 
         if not line.empty:
             unit = line.iloc[0]["Unidade"]
             description = line.iloc[0]["Não Conformidade"]
-            subtitle = f"{image_name} - {unit} - {description}"
+            subtitle = f"{image_name} - {unit}: {description}"
         else:
             subtitle = f"{image_name} - NÃO ENCONTRADO"
 
