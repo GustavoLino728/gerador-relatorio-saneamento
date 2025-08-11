@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, date
 from excel import get_inspections_data
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -26,20 +27,42 @@ def search_paragraph(document, text):
 
 def substitute_placeholders(document):
     excel_data = get_inspections_data()
-    for p in document.paragraphs:
+
+    def format_value(value):
+        if value is None:
+            return ""
+        if isinstance(value, float) and value.is_integer():
+            return str(int(value))
+        if isinstance(value, (datetime, date)):
+            return value.strftime("%d/%m/%Y") 
+        return str(value)
+
+    def replace_in_paragraph(paragraph):
+        original_text = paragraph.text
+        new_text = original_text
+
         for key, value in excel_data.items():
             placeholder = f"{{{{{key}}}}}"
-            if placeholder in p.text:
-                p.text = p.text.replace(placeholder, str(value))
+            replacement = format_value(value)
+            new_text = new_text.replace(placeholder, replacement)
+
+        if new_text != original_text:
+            paragraph.text = new_text
+            if paragraph.runs:
+                run = paragraph.runs[0]
+                run.font.name = "Arial"
+                run.font.size = Pt(10)
+
+    for p in document.paragraphs:
+        replace_in_paragraph(p)
 
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    for key, value in excel_data.items():
-                        placeholder = f"{{{{{key}}}}}"
-                        if placeholder in p.text:
-                            p.text = p.text.replace(placeholder, str(value))
+                    replace_in_paragraph(p)
+
+
                 
 def apply_background_color(color_hex: str):
     """

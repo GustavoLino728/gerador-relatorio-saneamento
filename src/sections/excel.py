@@ -7,6 +7,8 @@ spreadsheet = pd.ExcelFile(SHEET_PATH)
 inspections = pd.read_excel(spreadsheet, sheet_name="Fiscalizações")
 non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades")
 list_of_all_units = pd.read_excel(spreadsheet, sheet_name="Lista-SES-e-SAA")
+documents_excel = pd.read_excel(spreadsheet, sheet_name="Envio de Documentos")
+town_statistics = pd.read_excel(spreadsheet, sheet_name="Estatisticas ")
 
 ete_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs ETE")
 eee_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs EEE")
@@ -32,16 +34,13 @@ def get_non_conformities():
     this_report_non_conformities["Sigla"] = this_report_non_conformities["Unidade"].str.extract(r'^(...)\s*-')
     return this_report_non_conformities
 
-print(get_non_conformities().shape)
+print(get_inspections_data())
 
 # def all_unities_town_table():
 #     data = get_inspections_data()
 #     list_of_all_units.columns = list_of_all_units.columns.str.strip()
 #     tipo_fiscalizacao = unidecode(str(data["Tipo da Fiscalização"]).strip().lower())
 #     town = str(data["Municipio"]).upper()
-
-#     print(town)
-#     print(list_of_all_units["MUNICÍPIO"] == "PETROLINA")
 
 #     if tipo_fiscalizacao == "agua":
 #         list_of_saa = list_of_all_units[
