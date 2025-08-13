@@ -3,7 +3,7 @@ from images import get_images_from_dir
 from images import divide_images
 from utils import substitute_placeholders, next_filename, search_paragraph
 # from images import resize_images
-from tables import create_non_conformities_table, create_town_units_table, create_documents_table
+from tables import create_non_conformities_table, create_town_units_table, create_documents_table, create_statistics_table, create_quality_index_table
 
 document = Document(r"../data/RELATÓRIO MODELO.docx")
 
@@ -16,6 +16,8 @@ def generate_report():
     create_non_conformities_table(document, "Tabela 6 - Lista de NCs do SAA {{Municipio}}")
     create_town_units_table(document, "Tabela 2 - Descrição dos SAA {{Municipio}}.")
     create_documents_table(document, "Tabela 1 - Principais documentações solicitadas.")
+    create_statistics_table(document, "Tabela 4 - Informações do prestador de serviços e do município de {{Municipio}}.")
+    create_quality_index_table(document, "Tabela 5 - Principais Indicadores Regulatórios do município {{Municipio}}.")
 
     list_of_images_path = get_images_from_dir()
     divide_images(document, last_position, list_of_images_path)

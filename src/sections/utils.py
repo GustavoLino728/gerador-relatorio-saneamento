@@ -3,7 +3,7 @@ from datetime import datetime, date
 from excel import get_inspections_data
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt, RGBColor, Inches
 
 REPORT_DIR = "../reports/"
 REPORT_NAME = "RELATÓRIO MODELO"
@@ -34,34 +34,31 @@ def substitute_placeholders(document):
         if isinstance(value, float) and value.is_integer():
             return str(int(value))
         if isinstance(value, (datetime, date)):
-            return value.strftime("%d/%m/%Y") 
+            return value.strftime("%d/%m/%Y")
         return str(value)
 
-    def replace_in_paragraph(paragraph):
-        original_text = paragraph.text
-        new_text = original_text
+    def replace_in_runs(paragraph):
+        new_runs = []
+        for run in paragraph.runs:
+            run_text = run.text
+            replaced = False
+            for key, value in excel_data.items():
+                placeholder = f"{{{{{key}}}}}"
+                if placeholder in run_text:
+                    run_text = run_text.replace(placeholder, format_value(value))
+                    replaced = True
+            if replaced:
+                run.text = run_text
+                run.font.color.rgb = None  
 
-        for key, value in excel_data.items():
-            placeholder = f"{{{{{key}}}}}"
-            replacement = format_value(value)
-            new_text = new_text.replace(placeholder, replacement)
-
-        if new_text != original_text:
-            paragraph.text = new_text
-            if paragraph.runs:
-                run = paragraph.runs[0]
-                run.font.name = "Arial"
-                run.font.size = Pt(10)
 
     for p in document.paragraphs:
-        replace_in_paragraph(p)
-
+        replace_in_runs(p)
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    replace_in_paragraph(p)
-
+                    replace_in_runs(p)
 
                 
 def apply_background_color(color_hex: str):
@@ -74,3 +71,17 @@ def apply_background_color(color_hex: str):
     shading_elm.set(qn('w:color'), 'auto')
     shading_elm.set(qn('w:fill'), color_hex)
     return shading_elm
+
+def set_column_widths(table, *widths):
+    """
+    Ajusta a largura das colunas de uma tabela do python-docx.
+    
+    Parâmetros:
+        table (docx.table.Table): Tabela a ser formatada.
+        *widths (float): Larguras das colunas em polegadas. 
+                         Passar um valor para cada coluna.
+    """
+    for row in table.rows:
+        for col_idx, width in enumerate(widths):
+            if col_idx < len(row.cells):
+                row.cells[col_idx].width = Inches(width)
