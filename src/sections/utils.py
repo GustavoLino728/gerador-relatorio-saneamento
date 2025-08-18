@@ -10,11 +10,18 @@ REPORT_NAME = "RELATÓRIO MODELO"
 REPORT_EXT = ".docx"
 
 def next_filename():
-    for i in range(1, 1000):
-        name = f"{REPORT_NAME}{'' if i == 0 else f' - {i}'}{REPORT_EXT}"
+    inspections_data = get_inspections_data()
+    id = str(int(inspections_data["ID da Fiscalização"])) 
+    name = f"RELATÓRIO - ID {id}{REPORT_EXT}"
+    path = os.path.join(REPORT_DIR, name)
+
+    counter = 1
+    while os.path.exists(path):
+        name = f"RELATÓRIO - ID {id} ({counter}){REPORT_EXT}"
         path = os.path.join(REPORT_DIR, name)
-        if not os.path.exists(path):
-            return path
+        counter += 1
+    
+    return path
 
 def search_paragraph(document, text):
     paragraphs_found_by_search = []
@@ -37,28 +44,36 @@ def substitute_placeholders(document):
             return value.strftime("%d/%m/%Y")
         return str(value)
 
-    def replace_in_runs(paragraph):
-        new_runs = []
-        for run in paragraph.runs:
-            run_text = run.text
-            replaced = False
-            for key, value in excel_data.items():
-                placeholder = f"{{{{{key}}}}}"
-                if placeholder in run_text:
-                    run_text = run_text.replace(placeholder, format_value(value))
-                    replaced = True
-            if replaced:
-                run.text = run_text
-                run.font.color.rgb = None  
+    replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
 
+    def replace_in_paragraph(paragraph):
+        full_text = paragraph.text
+        replaced_any = False
+        for placeholder, value in replacements.items():
+            if placeholder in full_text:
+                full_text = full_text.replace(placeholder, value)
+                replaced_any = True
 
+        if replaced_any and paragraph.runs:
+            # Mantém formatação do primeiro run
+            first_run = paragraph.runs[0]
+            first_run.text = full_text
+            first_run.font.color.rgb = RGBColor(0, 0, 0)
+            # Limpa os demais runs
+            for run in paragraph.runs[1:]:
+                run.text = ''
+
+    # Aplica nos parágrafos
     for p in document.paragraphs:
-        replace_in_runs(p)
+        replace_in_paragraph(p)
+
+    # Aplica nas tabelas
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    replace_in_runs(p)
+                    replace_in_paragraph(p)
+
 
                 
 def apply_background_color(color_hex: str):
