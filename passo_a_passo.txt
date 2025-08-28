@@ -1,6 +1,7 @@
 Planilha
 1 - Abrir a planilha 'Listagem das NC's - Agua e Esgoto'
 2 - Cadastrar as informações na Aba "Fiscalizações"
+3 - Preencher a Tabela Referente a Documentações Enviadas
 3 - Renomear as fotos (https://pt.imgtools.co/rename-image)
 4 - Adicionar as fotos na pasta 'assets' 
 5 - Cadastrar as não conformidades na Aba "Não conformidades"
