@@ -20,7 +20,6 @@ def get_images_from_dir(path="../assets"):
 #     print(">>> Imagens redimensionadas para 210x210")
 
 def create_table_images(document, last_position, list_of_images_path, df_non_conformities):
-    from docx.oxml import OxmlElement
 
     # Cria os elementos de parágrafo (vazios)
     space_before = document.add_paragraph()

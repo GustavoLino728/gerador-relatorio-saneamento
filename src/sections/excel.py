@@ -35,27 +35,6 @@ def get_non_conformities():
     return this_report_non_conformities
 
 print(get_inspections_data())
-
-# def all_unities_town_table():
-#     data = get_inspections_data()
-#     list_of_all_units.columns = list_of_all_units.columns.str.strip()
-#     tipo_fiscalizacao = unidecode(str(data["Tipo da Fiscalização"]).strip().lower())
-#     town = str(data["Municipio"]).upper()
-
-#     if tipo_fiscalizacao == "agua":
-#         list_of_saa = list_of_all_units[
-#             (list_of_all_units["MUNICÍPIO"] == town) & (list_of_all_units["ÁGUA/ESGOTO"] == "agua")
-#         ]
-#         print(list_of_saa)
-
-#     elif tipo_fiscalizacao == "esgoto":
-#         list_of_ses = list_of_all_units[
-#             (list_of_all_units["MUNICÍPIO"] == town) & (list_of_all_units["ÁGUA/ESGOTO"] == "esgoto")
-#         ]
-#         print(list_of_ses)
     
-# all_unities_town_table()
-    
-
 # with pd.ExcelWriter(SHEET_PATH, mode="a", if_sheet_exists="replace", engine="openpyxl") as writer:
 #     inspections.to_excel(writer, sheet_name="Fiscalizações", index=False)

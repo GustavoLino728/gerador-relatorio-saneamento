@@ -8,6 +8,86 @@ from utils import search_paragraph, apply_background_color, set_column_widths
 from images import set_borders_table  
 import pandas as pd
 
+def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_width, col2_width, align_left=False):
+    """
+    Cria uma tabela nx2 a partir de uma lista de tuplas (key, value).
+    
+    rows_data: lista de tuplas (key, value), value="" indica subtópico
+    text_after_paragraph: Insere a tabela após o parágrafo com esse texto
+    align_left: se True, sobrescreve o alinhamento das células para LEFT
+    """
+    table = document.add_table(rows=0, cols=2)
+    
+    for key, value in rows_data:
+        row_cells = table.add_row().cells
+        if value == "":
+            cell = row_cells[0].merge(row_cells[1])
+            format_header_cell(cell, key)
+        else:
+            format_data_cell(row_cells[0], key)
+            for run in row_cells[0].paragraphs[0].runs:
+                run.bold = True
+            format_data_cell(row_cells[1], value)
+    
+    if align_left:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    
+    set_borders_table(table)
+    set_column_widths(table, col1_width, col2_width)
+    paragraph_index = search_paragraph(document, text_after_paragraph)[0]
+    document.paragraphs[paragraph_index]._element.addnext(table._element)
+
+def create_general_information_table(document, text):
+    report_data = get_inspections_data()
+    general_info = [
+        ("3.1 DO TITULAR", ""),
+        ("Titular:", "Microrregião de Água e Esgoto RMR-PAJEÚ/Microrregião de Água e Esgoto SERTÃO"),
+        ("Endereço:", "Avenida Cruz Cabugá, 1387 - Santo Amaro - Recife, PE - CEP: 50040-905"),
+        ("Responsável:", "Artur Paiva Coutinho"),
+        ("Município:", report_data["Municipio"]),
+        ("3.2 DO REGULADO", ""),
+        ("Regulado:", "Companhia Pernambucana de Saneamento - Compesa"),
+        ("Responsável:", "Dr. Alex Machado Campos"),
+        ("Endereço:", "Av. Cruz Cabugá, 1387 - Santo Amaro - Recife, PE - CEP: 50040-905"),
+        ("Representantes por acompanhar:", report_data["Representantes por acompanhar"]),
+        ("3.3 DO REGULADOR", ""),
+        ("Regulador:", "Agência de Regulação de Pernambuco"),
+        ("Diretor Presidente:", "Carlos Porto Filho"),
+        ("Endereço:", "Avenida Conselheiro Rosa e Silva, 975, Aflitos, Recife/PE, CEP: 52.050-020."),
+        ("Responsáveis pela fiscalização:", f"{report_data['Analista 1']} e {report_data['Analista 2']}"),
+        ("Período da Fiscalização:", report_data["Periodo"]),
+        ("Tipo de Fiscalização:", "Direta e periódica.")
+    ]
+
+    create_generic_nx2_table(document, general_info, text, col1_width=1, col2_width=9, align_left=True)
+
+def create_abbreviations_table(document, text):
+    abbreviations = [
+        ("Sigla", "Definição"),
+        ("ETA", "Estação de Tratamento de Água"),
+        ("ETE", "Estação de Tratamento de Esgoto"),
+        ("EEab", "Estação Elevatória de água bruta"),
+        ("EEat", "Estação Elevatória de água tratada"),
+        ("REL", "Reservatório Elevado"),
+        ("RAP", "Reservatório Apoiado"),
+        ("CMB", "Conjunto Moto Bomba"),
+        ("GNR", "Gerência de Unidade de Negócios Regional"),
+        ("SAA", "Sistemas de Abastecimento de Água"),
+        ("SES", "Sistemas de Esgotamento Sanitário"),
+        ("IUA", "Índice de Universalização do Abastecimento de Água"),
+        ("IUE",	"Índice de Universalização de Coleta de Esgotos Sanitários"),
+        ("IUT", "Índice de Universalização de Tratamento de Esgotos Sanitários"),
+        ("ICA",	"Índice de Cobertura de Abastecimento de Água"),
+        ("ICE", "Índice de Cobertura de Esgotamento Sanitário"),
+        ("IPD","Índice de Perdas na Distribuição"),
+        ("IQAP","Índice da Qualidade da Água Potável")
+    ]
+
+    create_generic_nx2_table(document, abbreviations, text, col1_width=2, col2_width=8, align_left=True)
+    
 def create_documents_table(document, text):
     df_documents = documents_excel.copy()
     table = document.add_table(rows=1, cols=len(df_documents.columns))
