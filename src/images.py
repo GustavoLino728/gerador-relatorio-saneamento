@@ -4,11 +4,15 @@ from docx.shared import Inches, Pt
 from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn
 from excel import get_non_conformities 
+from utils import set_borders_table
+
 
 def get_images_from_dir(path="./assets"):
+    """Retorna o caminho de todas as fotos que estão na pasta assets (.jpg, .jpeg, .png)"""
     all_files = os.listdir(path)
     all_images = [f for f in all_files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     return [os.path.join(path, f) for f in all_images]
+
 
 # def resize_images(path="../assets", size=(500, 500)):
 #     for filename in os.listdir(path):
@@ -19,9 +23,16 @@ def get_images_from_dir(path="./assets"):
 #             img_resized.save(image_path)
 #     print(">>> Imagens redimensionadas para 210x210")
 
-def create_table_images(document, last_position, list_of_images_path, df_non_conformities):
 
-    # Cria os elementos de parágrafo (vazios)
+def create_table_images(document, last_position, list_of_images_path, df_non_conformities):
+    """
+    Cria a tabela de fotos das não conformidades, com legenda e subtitulo
+    - document: Arquivo Word (Objeto)
+    - last_position: A posição onde começa a ser inserido as imagens
+    - list_of_images_path: Lista dos caminhos de todas as imagens
+    - df_non_conformities: Dataframe das não conformidades usadas para a legenda das imagens
+    """
+
     space_before = document.add_paragraph()
     space_after = document.add_paragraph()
     space_before_element = space_before._element
@@ -66,34 +77,8 @@ def create_table_images(document, last_position, list_of_images_path, df_non_con
 
 
 def divide_images(document, last_position, list_of_images_path):
+    """Divide as imagens em blocos de 6 imagens cada"""
     for i in range(0, len(list_of_images_path), 6):
         table_images = list_of_images_path[i:i+6]
         last_position = create_table_images(document, last_position, table_images, get_non_conformities())
         print(f">>> {i}° bloco concluido")
-
-def set_borders_table(table):
-    """
-    Adiciona bordas visíveis a uma tabela do python-docx.
-    Pode ser usada para qualquer tabela de documento Word.
-    """
-    tbl = table._element
-
-    # Verifica se <w:tblPr> existe, senão cria
-    tblPr_list = tbl.xpath('./w:tblPr')
-    if tblPr_list:
-        tblPr = tblPr_list[0]
-    else:
-        tblPr = OxmlElement('w:tblPr')
-        tbl.insert(0, tblPr)
-
-    # Cria as bordas
-    tblBorders = OxmlElement('w:tblBorders')
-    for border_name in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
-        border = OxmlElement(f'w:{border_name}')
-        border.set(qn('w:val'), 'single')    # tipo da borda
-        border.set(qn('w:sz'), '8')          # espessura
-        border.set(qn('w:space'), '0')       # espaço entre borda e conteúdo
-        border.set(qn('w:color'), '000000')  # cor preta
-        tblBorders.append(border)
-
-    tblPr.append(tblBorders)

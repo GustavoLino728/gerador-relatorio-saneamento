@@ -4,12 +4,14 @@ from excel import get_inspections_data
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
+from unidecode import unidecode
 
 REPORT_DIR = "./reports/"
 REPORT_NAME = "RELATÓRIO MODELO"
 REPORT_EXT = ".docx"
 
 def next_filename():
+    """Monta o nome do arquivo com o ID da fiscalização e caso houver arquivos já existentes incrementa em numero ao lado. EX: Relatório - ID 2 (1)"""
     inspections_data = get_inspections_data()
     id = str(int(inspections_data["ID da Fiscalização"])) 
     name = f"RELATÓRIO - ID {id}{REPORT_EXT}"
@@ -24,6 +26,11 @@ def next_filename():
     return path
 
 def search_paragraph(document, text):
+    """
+    Busca no documento word o texto passado como parametro e retorna a posição dele no documento
+    document: arquivo (objeto)
+    text: texto desejado para buscar
+    """
     paragraphs_found_by_search = []
     print(">>> Busca no documento iniciada")
     for i, p in enumerate(document.paragraphs):
@@ -33,18 +40,41 @@ def search_paragraph(document, text):
     return paragraphs_found_by_search
 
 def format_value(value):
-        if value is None:
-            return ""
-        if isinstance(value, float) and value.is_integer():
-            return str(int(value))
-        if isinstance(value, (datetime, date)):
-            return value.strftime("%d/%m/%Y")
-        return str(value)
+    """
+    Formata um valor para a inserção nas tabelas:
+    - Retira NaN e deixa em branco
+    - Converte de Float pra Int
+    - Retira hora da data e deixa no padrão (DD/MM/AA)
+    """
+    if value is None:
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, (datetime, date)):
+        return value.strftime("%d/%m/%Y")
+    return str(value)
 
 def format_dict_values(data: dict):
+    """
+    Formata um dict inteiro para inserção na tabela
+    """
     return {k: format_value(v) for k, v in data.items()}
 
+def sanitize_value(value):
+    """
+    Converte um valor em string limpa:
+    - Remove espaços extras
+    - Converte para minúsculo
+    - Remove acentos
+    """
+    return unidecode(str(value).strip().lower())
+
 def substitute_placeholders(document):
+    """
+    Define um padrão de Strings no documento ({{x}}), e substitui no documento e nas tabelas, de acordo com o dicionário retornado com os dados da fiscalização.
+    Caso houver chaves iguais as Strings realiza a troca. Ex: ({{nome}}) no documento, ele percorre o dicionario e caso aja a chave nome ele troca ({{nome}})
+    pelo valor correspondente a chave nome.
+    """
     excel_data = get_inspections_data()
 
     replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
@@ -129,3 +159,30 @@ def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
     set_margin('w:start', start)
     set_margin('w:bottom', bottom)
     set_margin('w:end', end)
+
+def set_borders_table(table):
+    """
+    Adiciona bordas visíveis a uma tabela do python-docx.
+    Pode ser usada para qualquer tabela de documento Word.
+    """
+    tbl = table._element
+
+    # Verifica se <w:tblPr> existe, senão cria
+    tblPr_list = tbl.xpath('./w:tblPr')
+    if tblPr_list:
+        tblPr = tblPr_list[0]
+    else:
+        tblPr = OxmlElement('w:tblPr')
+        tbl.insert(0, tblPr)
+
+    # Cria as bordas
+    tblBorders = OxmlElement('w:tblBorders')
+    for border_name in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        border = OxmlElement(f'w:{border_name}')
+        border.set(qn('w:val'), 'single')    # tipo da borda
+        border.set(qn('w:sz'), '8')          # espessura
+        border.set(qn('w:space'), '0')       # espaço entre borda e conteúdo
+        border.set(qn('w:color'), '000000')  # cor preta
+        tblBorders.append(border)
+
+    tblPr.append(tblBorders)
