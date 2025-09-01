@@ -5,7 +5,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
 
-REPORT_DIR = "../reports/"
+REPORT_DIR = "./reports/"
 REPORT_NAME = "RELATÓRIO MODELO"
 REPORT_EXT = ".docx"
 
@@ -32,10 +32,7 @@ def search_paragraph(document, text):
             print(">>> Uma ocorrencia foi encontrada")
     return paragraphs_found_by_search
 
-def substitute_placeholders(document):
-    excel_data = get_inspections_data()
-
-    def format_value(value):
+def format_value(value):
         if value is None:
             return ""
         if isinstance(value, float) and value.is_integer():
@@ -43,6 +40,12 @@ def substitute_placeholders(document):
         if isinstance(value, (datetime, date)):
             return value.strftime("%d/%m/%Y")
         return str(value)
+
+def format_dict_values(data: dict):
+    return {k: format_value(v) for k, v in data.items()}
+
+def substitute_placeholders(document):
+    excel_data = get_inspections_data()
 
     replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
 
@@ -100,3 +103,29 @@ def set_column_widths(table, *widths):
         for col_idx, width in enumerate(widths):
             if col_idx < len(row.cells):
                 row.cells[col_idx].width = Inches(width)
+                
+def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
+    """
+    Define margens internas de cada célula de uma tabela (em Twips).
+    top, start, bottom, end -> valores em cm ou None.
+    """
+    tc = cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    tcMar = tcPr.find(qn('w:tcMar'))
+    if tcMar is None:
+        tcMar = OxmlElement('w:tcMar')
+        tcPr.append(tcMar)
+
+    def set_margin(tag, value):
+        if value is not None:
+            margin = tcMar.find(qn(tag))
+            if margin is None:
+                margin = OxmlElement(tag)
+                tcMar.append(margin)
+            margin.set(qn('w:w'), str(int(value * 567)))  # 1 cm ≈ 567 twips
+            margin.set(qn('w:type'), 'dxa')
+
+    set_margin('w:top', top)
+    set_margin('w:start', start)
+    set_margin('w:bottom', bottom)
+    set_margin('w:end', end)

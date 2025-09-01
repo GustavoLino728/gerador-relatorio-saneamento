@@ -5,7 +5,7 @@ from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn
 from excel import get_non_conformities 
 
-def get_images_from_dir(path="../assets"):
+def get_images_from_dir(path="./assets"):
     all_files = os.listdir(path)
     all_images = [f for f in all_files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
     return [os.path.join(path, f) for f in all_images]
