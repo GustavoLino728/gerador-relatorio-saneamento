@@ -1,7 +1,7 @@
 import pandas as pd
 from unidecode import unidecode
 
-SHEET_PATH="../data/Listagem das NC's - Agua e Esgoto.xlsm"
+SHEET_PATH="./data/Listagem das NC's - Agua e Esgoto.xlsm"
 spreadsheet = pd.ExcelFile(SHEET_PATH)
 
 inspections = pd.read_excel(spreadsheet, sheet_name="Fiscalizações")

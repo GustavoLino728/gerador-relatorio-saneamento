@@ -1,42 +1,69 @@
 from docx import Document
 from docx.shared import Pt
-from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from unidecode import unidecode
 from excel import get_non_conformities, get_inspections_data, list_of_all_units, documents_excel, town_statistics
-from utils import search_paragraph, apply_background_color, set_column_widths
+from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins
 from images import set_borders_table  
 import pandas as pd
 
-def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_width, col2_width, align_left=False):
+def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_width, col2_width, cell_padding=0.1, align_left=False):
     """
     Cria uma tabela nx2 a partir de uma lista de tuplas (key, value).
     
-    rows_data: lista de tuplas (key, value), value="" indica subtópico
+    rows_data: lista de tuplas (key, value), 
+               value="" indica subtópico (header de seção)
+               primeira linha com 2 valores = header de colunas
     text_after_paragraph: Insere a tabela após o parágrafo com esse texto
     align_left: se True, sobrescreve o alinhamento das células para LEFT
+    cell_padding: espaçamento interno em cm (default 0.1cm)
     """
     table = document.add_table(rows=0, cols=2)
-    
-    for key, value in rows_data:
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    for i, (key, value) in enumerate(rows_data):
         row_cells = table.add_row().cells
+
         if value == "":
             cell = row_cells[0].merge(row_cells[1])
             format_header_cell(cell, key)
+            set_table_margins(cell, top=cell_padding, bottom=cell_padding,
+                             start=cell_padding, end=cell_padding)
+
+        elif i == 0:
+            format_header_cell(row_cells[0], key)
+            format_header_cell(row_cells[1], value)
+            for c in row_cells:
+                set_table_margins(c, top=cell_padding, bottom=cell_padding,
+                                 start=cell_padding, end=cell_padding)
+
         else:
             format_data_cell(row_cells[0], key)
             for run in row_cells[0].paragraphs[0].runs:
                 run.bold = True
             format_data_cell(row_cells[1], value)
-    
+
+            for c in row_cells:
+                set_table_margins(c, top=cell_padding, bottom=cell_padding,
+                                 start=cell_padding, end=cell_padding)
+
     if align_left:
         for row in table.rows:
             for cell in row.cells:
                 for para in cell.paragraphs:
                     para.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    
+
     set_borders_table(table)
     set_column_widths(table, col1_width, col2_width)
+
+    paragraph_index = search_paragraph(document, text_after_paragraph)[0]
+    document.paragraphs[paragraph_index]._element.addnext(table._element)
+
+
+    set_borders_table(table)
+    set_column_widths(table, col1_width, col2_width)
+
     paragraph_index = search_paragraph(document, text_after_paragraph)[0]
     document.paragraphs[paragraph_index]._element.addnext(table._element)
 
@@ -86,8 +113,20 @@ def create_abbreviations_table(document, text):
         ("IQAP","Índice da Qualidade da Água Potável")
     ]
 
-    create_generic_nx2_table(document, abbreviations, text, col1_width=2, col2_width=8, align_left=True)
+    create_generic_nx2_table(document, abbreviations, text, col1_width=1, col2_width=9, align_left=True)
     
+def create_last_report_table(document, text):
+    report_data = format_dict_values(get_inspections_data())
+    last_report = [
+        ("CONTEXTO", ""),
+        ("ÚLTIMA FISCALIZAÇÃO", report_data["Ultima Fiscalização"]),
+        ("TOTAL DE NCs DA ÚLTIMA FISCALIZAÇÂO", report_data["Total NCS UF"]),
+        ("DESDOBRAMENTOS", report_data["Desdobramentos"]),
+        ("NCs RESIDUAIS", report_data["NCS Residuais"]),
+    ]
+    
+    create_generic_nx2_table(document, last_report, text, col1_width=2.5, col2_width=5, cell_padding=0.5, align_left=True)
+
 def create_documents_table(document, text):
     df_documents = documents_excel.copy()
     table = document.add_table(rows=1, cols=len(df_documents.columns))
