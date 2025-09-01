@@ -4,9 +4,9 @@ from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from unidecode import unidecode
 from excel import get_non_conformities, get_inspections_data, list_of_all_units, documents_excel, town_statistics
-from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins
-from images import set_borders_table  
+from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table
 import pandas as pd
+
 
 def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_width, col2_width, cell_padding=0.1, align_left=False):
     """
@@ -67,7 +67,9 @@ def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_wid
     paragraph_index = search_paragraph(document, text_after_paragraph)[0]
     document.paragraphs[paragraph_index]._element.addnext(table._element)
 
+
 def create_general_information_table(document, text):
+    """Cria a tabela de Informações gerais da fiscalização. Sobre o regulador, o regulado e o titular"""
     report_data = get_inspections_data()
     general_info = [
         ("3.1 DO TITULAR", ""),
@@ -90,8 +92,10 @@ def create_general_information_table(document, text):
     ]
 
     create_generic_nx2_table(document, general_info, text, col1_width=1, col2_width=9, align_left=True)
-
+    
+    
 def create_abbreviations_table(document, text):
+    """Cria a tabela de siglas que aparecem no documento"""
     abbreviations = [
         ("Sigla", "Definição"),
         ("ETA", "Estação de Tratamento de Água"),
@@ -115,7 +119,9 @@ def create_abbreviations_table(document, text):
 
     create_generic_nx2_table(document, abbreviations, text, col1_width=1, col2_width=9, align_left=True)
     
+    
 def create_last_report_table(document, text):
+    """Cria a tabela com as informações da fiscalização anterior realizada naquele municipio"""
     report_data = format_dict_values(get_inspections_data())
     last_report = [
         ("CONTEXTO", ""),
@@ -127,7 +133,9 @@ def create_last_report_table(document, text):
     
     create_generic_nx2_table(document, last_report, text, col1_width=2.5, col2_width=5, cell_padding=0.5, align_left=True)
 
+
 def create_documents_table(document, text):
+    """Cria a tabela relativa as documentações necessarias para o processo, se elas foram enviadas ou não e porquê"""
     df_documents = documents_excel.copy()
     table = document.add_table(rows=1, cols=len(df_documents.columns))
     set_column_widths(table, 6.5, 0.5, 0.5, 6.5)
@@ -146,17 +154,22 @@ def create_documents_table(document, text):
 
     print("✅ Tabela de documentos criada.")
 
+
 def create_town_units_table(document, text):
+    """
+    Cria a tabela de unidades (de água ou esgoto) registradas no município, usando uma planilha como base de dados.
+    Se não houver unidades compatíveis com o filtro, não insere tabela.
+    """
     report_data = get_inspections_data()
 
-    town_name = unidecode(str(report_data["Municipio"]).strip().lower())
-    inspection_type = unidecode(str(report_data["Tipo da Fiscalização"]).strip().lower())
+    town_name = sanitize_value(report_data["Municipio"])
+    inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
 
     units_df = list_of_all_units.copy()
     units_df.columns = units_df.columns.str.strip()
 
-    units_df["MUNICÍPIO_norm"] = units_df["MUNICÍPIO"].astype(str).str.strip().str.lower().apply(unidecode)
-    units_df["AGUA_ESGOTO_norm"] = units_df["ÁGUA/ESGOTO"].astype(str).str.strip().str.lower().apply(unidecode)
+    units_df["MUNICÍPIO_norm"] = units_df["MUNICÍPIO"].apply(sanitize_value)
+    units_df["AGUA_ESGOTO_norm"] = units_df["ÁGUA/ESGOTO"].apply(sanitize_value)
 
     filtered_units = units_df[units_df["MUNICÍPIO_norm"] == town_name]
 
@@ -164,6 +177,10 @@ def create_town_units_table(document, text):
         filtered_units = filtered_units[filtered_units["AGUA_ESGOTO_norm"].str.contains("esgoto")]
     else:
         filtered_units = filtered_units[filtered_units["AGUA_ESGOTO_norm"].str.contains("agua")]
+
+    if filtered_units.empty:
+        print("⚠️ Nenhuma unidade encontrada para este município/tipo de fiscalização.")
+        return
 
     filtered_units.insert(0, "ITEM", range(1, len(filtered_units) + 1))
     filtered_units["OBSERVAÇÃO"] = ""
@@ -186,7 +203,9 @@ def create_town_units_table(document, text):
 
     print("✅ Tabela de unidades do município criada.")    
 
+
 def create_statistics_table(document, text):
+    """Cria a tabela de indicadores quantitativos daquele municipio, busca os dados na planilha (ANO BASE: 2023)"""
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
     report_town = report_data["Municipio"].upper()
@@ -231,7 +250,9 @@ def create_statistics_table(document, text):
 
     print("✅ Tabela de estatísticas criada.")
 
+
 def create_quality_index_table(document: Document, text: str):
+    """Cria a tabela relativa aos indicadores relevantes daquele municipio, busca na planilha (ANO BASE: 2023) e traz IUA, IUE, IUT"""
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
     report_town = report_data["Municipio"].upper()
@@ -256,13 +277,13 @@ def create_quality_index_table(document: Document, text: str):
 
     table = document.add_table(rows=2, cols=len(selected_columns) + 1)
 
-    format_header_cell(table.rows[0].cells[0], "Município", font_size=8)
+    format_header_cell(table.rows[0].cells[0], "Município", font_size=10)
     for col_idx, col_name in enumerate(selected_columns, start=1):
-        format_header_cell(table.rows[0].cells[col_idx], col_name, font_size=8)
+        format_header_cell(table.rows[0].cells[col_idx], col_name, font_size=10)
 
-    format_data_cell(table.rows[1].cells[0], report_town, font_size=8)
+    format_data_cell(table.rows[1].cells[0], report_town, font_size=10)
     for col_idx, col_name in enumerate(selected_columns, start=1):
-        format_data_cell(table.rows[1].cells[col_idx], valores_tabela[col_name], font_size=8)
+        format_data_cell(table.rows[1].cells[col_idx], valores_tabela[col_name], font_size=10)
 
     set_borders_table(table)
 
@@ -273,6 +294,7 @@ def create_quality_index_table(document: Document, text: str):
 
 
 def create_non_conformities_table(document: Document, text):
+    """ Cria a tabela de não conformidades do relátorio apartir da busca dos dados na planilha (Nao-conformidades)"""
     df_ncs = get_non_conformities()
 
     selected_columns = [
@@ -303,6 +325,12 @@ def create_non_conformities_table(document: Document, text):
     print("✅ Tabela de não conformidades criada.")
 
 
+def create_water_params_table():
+    """Cria a tabela 7, de parametros da Agua, que trás todas as unidades ETA's"""
+    report_data = get_inspections_data()
+    inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
+    
+    
 def format_header_cell(cell, text, font_size=10, font_name="Arial", bg_color="D9D9D9"):
     """Formata célula de cabeçalho: negrito, centralizado e fundo colorido."""
     para = cell.paragraphs[0]
@@ -314,6 +342,7 @@ def format_header_cell(cell, text, font_size=10, font_name="Arial", bg_color="D9
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
     cell._tc.get_or_add_tcPr().append(apply_background_color(bg_color))
+
 
 def format_data_cell(cell, value, font_size=10, font_name="Arial"):
     """Formata célula de dados: centralizado e sem 'nan'."""

@@ -1,4 +1,6 @@
 from report import generate_report
+
+
 def main():
     generate_report()
 
