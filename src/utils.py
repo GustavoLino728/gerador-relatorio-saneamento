@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, date
 from excel import get_inspections_data
+from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
@@ -186,3 +187,39 @@ def set_borders_table(table):
         tblBorders.append(border)
 
     tblPr.append(tblBorders)
+    
+def to_rows_data(data, subtitle=None):
+    """
+    Converte um dicionário ou lista de tuplas em lista de listas compatível com create_generic_table.
+    
+    Parâmetros:
+    - data: dict ou lista de tuplas/listas [(chave, valor), ...]
+    - subtitle: opcional, string que vira linha mesclada no topo
+    
+    Retorno:
+    - rows_data: lista de listas pronta para create_generic_table
+    """
+    rows = []
+
+    if subtitle:
+        rows.append([subtitle])
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            rows.append([key, value])
+
+    elif isinstance(data, list):
+        for item in data:
+            rows.append(list(item))
+    
+    return rows
+
+def decide_report_type():
+    report_data = get_inspections_data()
+    inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
+    if inspection_type == "agua":
+        return Document(r"./data/RELATÓRIO_AGUA_MODELO.docx")
+    elif inspection_type == "esgoto":
+        return Document(r"./data/RELATÓRIO_ESGOTO_MODELO.docx")
+    elif inspection_type == "comercial":
+        return Document(r"./data/RELATÓRIO_COMERCIAL_MODELO.docx")

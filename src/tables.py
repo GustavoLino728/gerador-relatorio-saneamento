@@ -4,49 +4,57 @@ from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from unidecode import unidecode
 from excel import get_non_conformities, get_inspections_data, list_of_all_units, documents_excel, town_statistics
-from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table
+from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table, to_rows_data
 import pandas as pd
 
 
-def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_width, col2_width, cell_padding=0.1, align_left=False):
+def create_generic_table(document, rows_data, text_after_paragraph, col_widths=None,
+                         cell_padding=0.1, align_left=False, font_size=10):
     """
-    Cria uma tabela nx2 a partir de uma lista de tuplas (key, value).
-    
-    rows_data: lista de tuplas (key, value), 
-               value="" indica subtópico (header de seção)
-               primeira linha com 2 valores = header de colunas
-    text_after_paragraph: Insere a tabela após o parágrafo com esse texto
-    align_left: se True, sobrescreve o alinhamento das células para LEFT
-    cell_padding: espaçamento interno em cm (default 0.1cm)
+    Cria uma tabela genérica a partir de rows_data (lista de listas).
+
+    rows_data:
+        - Primeira linha: cabeçalho (colunas)
+        - Demais linhas: dados
+        - Se uma linha tiver menos valores que o número de colunas ou apenas 1 valor:
+          será tratada como subtítulo (mescla todas as colunas)
+    text_after_paragraph: posição para inserir a tabela
+    col_widths: lista de larguras para cada coluna (ex: [2, 6, 3])
+    cell_padding: preenchimento interno das células
+    align_left: se True, alinha conteúdo à esquerda
+    font_size: tamanho da fonte do conteúdo
     """
-    table = document.add_table(rows=0, cols=2)
+    if not rows_data:
+        print("⚠️ Nenhum dado para criar tabela.")
+        return
+
+    n_cols = max(len(row) for row in rows_data)
+    table = document.add_table(rows=0, cols=n_cols)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-    for i, (key, value) in enumerate(rows_data):
+    for i, row in enumerate(rows_data):
         row_cells = table.add_row().cells
 
-        if value == "":
-            cell = row_cells[0].merge(row_cells[1])
-            format_header_cell(cell, key)
-            set_table_margins(cell, top=cell_padding, bottom=cell_padding,
-                             start=cell_padding, end=cell_padding)
+        # Linha subtítulo / merge
+        if len(row) == 1 or len(row) < n_cols:
+            merged_cell = row_cells[0]
+            for c in row_cells[1:]:
+                merged_cell = merged_cell.merge(c)
+            format_header_cell(merged_cell, row[0], font_size=font_size)
+            set_table_margins(merged_cell, top=cell_padding, bottom=cell_padding,
+                              start=cell_padding, end=cell_padding)
 
         elif i == 0:
-            format_header_cell(row_cells[0], key)
-            format_header_cell(row_cells[1], value)
-            for c in row_cells:
-                set_table_margins(c, top=cell_padding, bottom=cell_padding,
-                                 start=cell_padding, end=cell_padding)
+            for j, value in enumerate(row):
+                format_header_cell(row_cells[j], value, font_size=font_size)
+                set_table_margins(row_cells[j], top=cell_padding, bottom=cell_padding,
+                                  start=cell_padding, end=cell_padding)
 
         else:
-            format_data_cell(row_cells[0], key)
-            for run in row_cells[0].paragraphs[0].runs:
-                run.bold = True
-            format_data_cell(row_cells[1], value)
-
-            for c in row_cells:
-                set_table_margins(c, top=cell_padding, bottom=cell_padding,
-                                 start=cell_padding, end=cell_padding)
+            for j, value in enumerate(row):
+                format_data_cell(row_cells[j], value, font_size=font_size)
+                set_table_margins(row_cells[j], top=cell_padding, bottom=cell_padding,
+                                  start=cell_padding, end=cell_padding)
 
     if align_left:
         for row in table.rows:
@@ -55,83 +63,78 @@ def create_generic_nx2_table(document, rows_data, text_after_paragraph, col1_wid
                     para.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
     set_borders_table(table)
-    set_column_widths(table, col1_width, col2_width)
+    if col_widths:
+        set_column_widths(table, *col_widths)
 
     paragraph_index = search_paragraph(document, text_after_paragraph)[0]
     document.paragraphs[paragraph_index]._element.addnext(table._element)
 
-
-    set_borders_table(table)
-    set_column_widths(table, col1_width, col2_width)
-
-    paragraph_index = search_paragraph(document, text_after_paragraph)[0]
-    document.paragraphs[paragraph_index]._element.addnext(table._element)
+    print("✅ Tabela genérica criada.")
 
 
 def create_general_information_table(document, text):
     """Cria a tabela de Informações gerais da fiscalização. Sobre o regulador, o regulado e o titular"""
     report_data = get_inspections_data()
+    
     general_info = [
-        ("3.1 DO TITULAR", ""),
-        ("Titular:", "Microrregião de Água e Esgoto RMR-PAJEÚ/Microrregião de Água e Esgoto SERTÃO"),
-        ("Endereço:", "Avenida Cruz Cabugá, 1387 - Santo Amaro - Recife, PE - CEP: 50040-905"),
-        ("Responsável:", "Artur Paiva Coutinho"),
-        ("Município:", report_data["Municipio"]),
-        ("3.2 DO REGULADO", ""),
-        ("Regulado:", "Companhia Pernambucana de Saneamento - Compesa"),
-        ("Responsável:", "Dr. Alex Machado Campos"),
-        ("Endereço:", "Av. Cruz Cabugá, 1387 - Santo Amaro - Recife, PE - CEP: 50040-905"),
-        ("Representantes por acompanhar:", report_data["Representantes por acompanhar"]),
-        ("3.3 DO REGULADOR", ""),
-        ("Regulador:", "Agência de Regulação de Pernambuco"),
-        ("Diretor Presidente:", "Carlos Porto Filho"),
-        ("Endereço:", "Avenida Conselheiro Rosa e Silva, 975, Aflitos, Recife/PE, CEP: 52.050-020."),
-        ("Responsáveis pela fiscalização:", f"{report_data['Analista 1']} e {report_data['Analista 2']}"),
-        ("Período da Fiscalização:", report_data["Periodo"]),
-        ("Tipo de Fiscalização:", "Direta e periódica.")
+        ["3.1 DO TITULAR"],
+        ["Titular:", "Microrregião de Água e Esgoto RMR-PAJEÚ/Microrregião de Água e Esgoto SERTÃO"],
+        ["Endereço:", "Avenida Cruz Cabugá, 1387 - Santo Amaro - Recife, PE - CEP: 50040-905"],
+        ["Responsável:", "Artur Paiva Coutinho"],
+        ["Município:", report_data["Municipio"]],
+        ["3.2 DO REGULADO"],
+        ["Regulado:", "Companhia Pernambucana de Saneamento - Compesa"],
+        ["Responsável:", "Dr. Alex Machado Campos"],
+        ["Endereço:", "Av. Cruz Cabugá, 1387 - Santo Amaro - Recife, PE - CEP: 50040-905"],
+        ["Representantes por acompanhar:", report_data["Representantes por acompanhar"]],
+        ["3.3 DO REGULADOR"],
+        ["Regulador:", "Agência de Regulação de Pernambuco"],
+        ["Diretor Presidente:", "Carlos Porto Filho"],
+        ["Endereço:", "Avenida Conselheiro Rosa e Silva, 975, Aflitos, Recife/PE, CEP: 52.050-020."],
+        ["Responsáveis pela fiscalização:", f"{report_data['Analista 1']} e {report_data['Analista 2']}"],
+        ["Período da Fiscalização:", report_data["Periodo"]],
+        ["Tipo de Fiscalização:", "Direta e periódica."]
     ]
-
-    create_generic_nx2_table(document, general_info, text, col1_width=1, col2_width=9, align_left=True)
+    
+    create_generic_table(document, rows_data=general_info, text_after_paragraph=text, col_widths=[1, 9], align_left=True)
     
     
 def create_abbreviations_table(document, text):
-    """Cria a tabela de siglas que aparecem no documento"""
     abbreviations = [
-        ("Sigla", "Definição"),
-        ("ETA", "Estação de Tratamento de Água"),
-        ("ETE", "Estação de Tratamento de Esgoto"),
-        ("EEab", "Estação Elevatória de água bruta"),
-        ("EEat", "Estação Elevatória de água tratada"),
-        ("REL", "Reservatório Elevado"),
-        ("RAP", "Reservatório Apoiado"),
-        ("CMB", "Conjunto Moto Bomba"),
-        ("GNR", "Gerência de Unidade de Negócios Regional"),
-        ("SAA", "Sistemas de Abastecimento de Água"),
-        ("SES", "Sistemas de Esgotamento Sanitário"),
-        ("IUA", "Índice de Universalização do Abastecimento de Água"),
-        ("IUE",	"Índice de Universalização de Coleta de Esgotos Sanitários"),
-        ("IUT", "Índice de Universalização de Tratamento de Esgotos Sanitários"),
-        ("ICA",	"Índice de Cobertura de Abastecimento de Água"),
-        ("ICE", "Índice de Cobertura de Esgotamento Sanitário"),
-        ("IPD","Índice de Perdas na Distribuição"),
-        ("IQAP","Índice da Qualidade da Água Potável")
+        ["Sigla", "Definição"],
+        ["ETA", "Estação de Tratamento de Água"],
+        ["ETE", "Estação de Tratamento de Esgoto"],
+        ["EEab", "Estação Elevatória de água bruta"],
+        ["EEat", "Estação Elevatória de água tratada"],
+        ["REL", "Reservatório Elevado"],
+        ["RAP", "Reservatório Apoiado"],
+        ["CMB", "Conjunto Moto Bomba"],
+        ["GNR", "Gerência de Unidade de Negócios Regional"],
+        ["SAA", "Sistemas de Abastecimento de Água"],
+        ["SES", "Sistemas de Esgotamento Sanitário"],
+        ["IUA", "Índice de Universalização do Abastecimento de Água"],
+        ["IUE", "Índice de Universalização de Coleta de Esgotos Sanitários"],
+        ["IUT", "Índice de Universalização de Tratamento de Esgotos Sanitários"],
+        ["ICA", "Índice de Cobertura de Abastecimento de Água"],
+        ["ICE", "Índice de Cobertura de Esgotamento Sanitário"],
+        ["IPD", "Índice de Perdas na Distribuição"],
+        ["IQAP", "Índice da Qualidade da Água Potável"]
     ]
-
-    create_generic_nx2_table(document, abbreviations, text, col1_width=1, col2_width=9, align_left=True)
+    
+    create_generic_table(document, abbreviations, text, col_widths=[1, 9], align_left=True)
     
     
 def create_last_report_table(document, text):
-    """Cria a tabela com as informações da fiscalização anterior realizada naquele municipio"""
     report_data = format_dict_values(get_inspections_data())
-    last_report = [
-        ("CONTEXTO", ""),
-        ("ÚLTIMA FISCALIZAÇÃO", report_data["Ultima Fiscalização"]),
-        ("TOTAL DE NCs DA ÚLTIMA FISCALIZAÇÂO", report_data["Total NCS UF"]),
-        ("DESDOBRAMENTOS", report_data["Desdobramentos"]),
-        ("NCs RESIDUAIS", report_data["NCS Residuais"]),
-    ]
+    last_report_data = {
+        "ÚLTIMA FISCALIZAÇÃO": report_data["Ultima Fiscalização"],
+        "TOTAL DE NCs DA ÚLTIMA FISCALIZAÇÂO": report_data["Total NCS UF"],
+        "DESDOBRAMENTOS": report_data["Desdobramentos"],
+        "NCs RESIDUAIS": report_data["NCS Residuais"]
+    }
     
-    create_generic_nx2_table(document, last_report, text, col1_width=2.5, col2_width=5, cell_padding=0.5, align_left=True)
+    rows = to_rows_data(last_report_data, subtitle="CONTEXTO")
+    create_generic_table(document, rows, text, col_widths=[2.5, 5], cell_padding=0.4, align_left=True)
 
 
 def create_documents_table(document, text):
@@ -156,27 +159,21 @@ def create_documents_table(document, text):
 
 
 def create_town_units_table(document, text):
-    """
-    Cria a tabela de unidades (de água ou esgoto) registradas no município, usando uma planilha como base de dados.
-    Se não houver unidades compatíveis com o filtro, não insere tabela.
-    """
     report_data = get_inspections_data()
-
     town_name = sanitize_value(report_data["Municipio"])
     inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
 
     units_df = list_of_all_units.copy()
     units_df.columns = units_df.columns.str.strip()
+    units_df["TOWN_NORMALIZED"] = units_df["MUNICÍPIO"].apply(sanitize_value)
+    units_df["WATER_SEWER_NORMALIZED"] = units_df["ÁGUA/ESGOTO"].apply(sanitize_value)
 
-    units_df["MUNICÍPIO_norm"] = units_df["MUNICÍPIO"].apply(sanitize_value)
-    units_df["AGUA_ESGOTO_norm"] = units_df["ÁGUA/ESGOTO"].apply(sanitize_value)
+    filtered_units = units_df[units_df["TOWN_NORMALIZED"] == town_name]
 
-    filtered_units = units_df[units_df["MUNICÍPIO_norm"] == town_name]
-
-    if "esgoto" in inspection_type:
-        filtered_units = filtered_units[filtered_units["AGUA_ESGOTO_norm"].str.contains("esgoto")]
+    if "esgoto" in inspection_type.lower():
+        filtered_units = filtered_units[filtered_units["WATER_SEWER_NORMALIZED"].str.contains("esgoto")]
     else:
-        filtered_units = filtered_units[filtered_units["AGUA_ESGOTO_norm"].str.contains("agua")]
+        filtered_units = filtered_units[filtered_units["WATER_SEWER_NORMALIZED"].str.contains("agua")]
 
     if filtered_units.empty:
         print("⚠️ Nenhuma unidade encontrada para este município/tipo de fiscalização.")
@@ -186,29 +183,18 @@ def create_town_units_table(document, text):
     filtered_units["OBSERVAÇÃO"] = ""
 
     final_df = filtered_units[["ITEM", "SISTEMA", "UNIDADE", "OBSERVAÇÃO"]]
-    table = document.add_table(rows=1, cols=len(final_df.columns))
-    set_column_widths(table, 0.3, 4.0, 6.0, 1.7)
 
-    for idx, col_name in enumerate(final_df.columns):
-        format_header_cell(table.rows[0].cells[idx], col_name, font_size=10)
+    rows_data = [final_df.columns.tolist()]  
+    for row in final_df.itertuples(index=False, name=None):
+        rows_data.append(list(row))
 
-    for _, row in final_df.iterrows():
-        cells = table.add_row().cells
-        for idx, value in enumerate(row):
-            format_data_cell(cells[idx], value, font_size=10)
-
-    set_borders_table(table)
-    paragraph_index = search_paragraph(document, text)[0]
-    document.paragraphs[paragraph_index]._element.addnext(table._element)
-
-    print("✅ Tabela de unidades do município criada.")    
+    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.3, 4, 6, 1.7], align_left=True)
 
 
 def create_statistics_table(document, text):
-    """Cria a tabela de indicadores quantitativos daquele municipio, busca os dados na planilha (ANO BASE: 2023)"""
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
-    report_town = report_data["Municipio"].upper()
+    town_name = report_data["Municipio"].upper()
 
     pernambuco_stats = {
         "Quantidade de economias residenciais ativas de água (A) - EAA": "2.261.695",
@@ -220,39 +206,31 @@ def create_statistics_table(document, text):
         "Quantidade de domicílios residenciais existentes na área de abrangência do prestador de serviços (G) - DAP": "2.646.895"
     }
 
-    selected_columns = list(pernambuco_stats.keys())
+    columns = list(pernambuco_stats.keys())
+    town_stats = df_statistics[df_statistics["ANO BASE: 2023"] == town_name]
+    town_stats = town_stats[columns]
 
-    stats_from_this_town = df_statistics[df_statistics["ANO BASE: 2023"] == report_town]
-    stats_from_this_town = stats_from_this_town[selected_columns]
+    rows_data = [["INFORMAÇÃO", "PERNAMBUCO", town_name]]
+    for column in columns:
+        town_value = ""
+        if not town_stats.empty:
+            town_value = town_stats.iloc[0][column]
+            if isinstance(town_value, (int, float)):
+                town_value = str(int(town_value))
+        rows_data.append([column, pernambuco_stats[column], town_value])
 
-    table = document.add_table(rows=len(selected_columns) + 1, cols=3)
-    set_column_widths(table, 4, 1.5, 1.5)
-
-    format_header_cell(table.rows[0].cells[0], "INFORMAÇÃO", font_size=10)
-    format_header_cell(table.rows[0].cells[1], "PERNAMBUCO", font_size=10)
-    format_header_cell(table.rows[0].cells[2], report_town, font_size=10)
-
-    for idx, indicador in enumerate(selected_columns, start=1):
-
-        format_data_cell(table.rows[idx].cells[0], indicador, font_size=10)
-
-        format_data_cell(table.rows[idx].cells[1], pernambuco_stats[indicador], font_size=10)
-
-        valor_municipio = stats_from_this_town.iloc[0][indicador] if not stats_from_this_town.empty else ""
-        if isinstance(valor_municipio, (int, float)):
-            valor_municipio = str(int(valor_municipio))
-
-        format_data_cell(table.rows[idx].cells[2], valor_municipio, font_size=10)
-
-    set_borders_table(table)
-    paragraph_index = search_paragraph(document, text)[0]
-    document.paragraphs[paragraph_index]._element.addnext(table._element)
+    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[6, 1.5, 1.5], align_left=True, font_size=10)
 
     print("✅ Tabela de estatísticas criada.")
 
 
-def create_quality_index_table(document: Document, text: str):
-    """Cria a tabela relativa aos indicadores relevantes daquele municipio, busca na planilha (ANO BASE: 2023) e traz IUA, IUE, IUT"""
+def create_quality_index_table(document, text):
+    """
+    Cria a tabela de indicadores de qualidade para o município.
+    Formato: 2 linhas x 8 colunas.
+    Linha 1: cabeçalho ("Município" + indicadores)
+    Linha 2: valores correspondentes
+    """
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
     report_town = report_data["Municipio"].upper()
@@ -264,37 +242,25 @@ def create_quality_index_table(document: Document, text: str):
 
     stats_from_this_town = df_statistics[df_statistics["ANO BASE: 2023"] == report_town]
 
-    valores_tabela = {}
+    valores_tabela = []
     for col in selected_columns:
-        if col in ["IUA(%)", "IUE(%)", "IUT(%)"]:
-            valores_tabela[col] = (
-                stats_from_this_town.iloc[0][col]
-                if not stats_from_this_town.empty and col in stats_from_this_town.columns
-                else ""
-            )
-        else:
-            valores_tabela[col] = "-"
+        valor = "-"
+        if not stats_from_this_town.empty and col in stats_from_this_town.columns:
+            valor = stats_from_this_town.iloc[0][col]
+            if isinstance(valor, (int, float)):
+                valor = str(int(valor))
+        valores_tabela.append(valor)
 
-    table = document.add_table(rows=2, cols=len(selected_columns) + 1)
+    rows_data = [["Município"] + selected_columns, [report_town] + valores_tabela]
 
-    format_header_cell(table.rows[0].cells[0], "Município", font_size=10)
-    for col_idx, col_name in enumerate(selected_columns, start=1):
-        format_header_cell(table.rows[0].cells[col_idx], col_name, font_size=10)
-
-    format_data_cell(table.rows[1].cells[0], report_town, font_size=10)
-    for col_idx, col_name in enumerate(selected_columns, start=1):
-        format_data_cell(table.rows[1].cells[col_idx], valores_tabela[col_name], font_size=10)
-
-    set_borders_table(table)
-
-    paragraph_index = search_paragraph(document, text)[0]
-    document.paragraphs[paragraph_index]._element.addnext(table._element)
-
-    print(f"✅ Tabela de índices de qualidade criada para {report_town}")
+    create_generic_table(document, rows_data, text, col_widths=[3] + [1]*7, align_left=True, font_size=10)
+    print(f"✅ Tabela de indicadores de qualidade criada para {report_town}")
 
 
-def create_non_conformities_table(document: Document, text):
-    """ Cria a tabela de não conformidades do relátorio apartir da busca dos dados na planilha (Nao-conformidades)"""
+def create_non_conformities_table(document, text):
+    """
+    Cria a tabela de não conformidades.
+    """
     df_ncs = get_non_conformities()
 
     selected_columns = [
@@ -305,30 +271,31 @@ def create_non_conformities_table(document: Document, text):
         "Enquadramento", 
         "Determinações"
     ]
-    df_ncs = df_ncs[selected_columns]
 
-    table = document.add_table(rows=1, cols=len(selected_columns))
-    set_column_widths(table, 3, 3, 0.5, 0.3, 3, 3)
+    df_ncs = df_ncs[selected_columns].fillna("")
+    rows_data = to_rows_data([df_ncs.columns.tolist()] + df_ncs.values.tolist())
 
-    for idx, col_name in enumerate(selected_columns):
-        format_header_cell(table.rows[0].cells[idx], col_name.upper(), font_size=8)
-
-    for _, row in df_ncs.iterrows():
-        cells = table.add_row().cells
-        for idx, col_name in enumerate(selected_columns):
-            format_data_cell(cells[idx], row[col_name], font_size=8)
-
-    list_paragraph_index = search_paragraph(document, text)[0]
-    document.paragraphs[list_paragraph_index]._element.addnext(table._element)
-
-    set_borders_table(table)
-    print("✅ Tabela de não conformidades criada.")
+    create_generic_table(document, rows_data, text, col_widths=[3, 3, 0.5, 0.3, 3, 3], cell_padding=0.2, align_left=False, font_size=8)
 
 
-def create_water_params_table():
-    """Cria a tabela 7, de parametros da Agua, que trás todas as unidades ETA's"""
+def create_water_params_table(document, text):
     report_data = get_inspections_data()
     inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
+    
+    if inspection_type == "esgoto":
+        return 
+    
+    df_ncs = get_non_conformities()
+    df_eta = df_ncs[df_ncs["Sigla"] == "ETA"]
+    
+    columns = ["QUALIDADE DA ÁGUA (UNIDADES)", "CLORO (mg.L )", "TURBIDEZ (NTU)", "OBSERVAÇÕES"]
+    rows_data = [columns]
+
+    for row in df_eta.itertuples(index=False, name=None):
+        row_list = [getattr(row, col) if col in df_eta.columns else "" for col in columns]
+        rows_data.append(row_list)
+
+    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 1.5, 1.5, 3], align_left=False)
     
     
 def format_header_cell(cell, text, font_size=10, font_name="Arial", bg_color="D9D9D9"):
