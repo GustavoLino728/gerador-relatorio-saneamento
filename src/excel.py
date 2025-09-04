@@ -6,7 +6,7 @@ SHEET_PATH="./data/Listagem das NC's - Agua e Esgoto.xlsm"
 spreadsheet = pd.ExcelFile(SHEET_PATH)
 
 inspections = pd.read_excel(spreadsheet, sheet_name="Fiscalizações")
-non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades")
+non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades", header=5)
 list_of_all_units = pd.read_excel(spreadsheet, sheet_name="Lista-SES-e-SAA")
 documents_excel = pd.read_excel(spreadsheet, sheet_name="Envio de Documentos")
 town_statistics = pd.read_excel(spreadsheet, sheet_name="Estatisticas ")

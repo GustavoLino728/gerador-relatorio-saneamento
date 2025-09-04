@@ -71,7 +71,6 @@ def create_table_images(document, last_position, list_of_images_path, df_non_con
     space_after_element.addnext(images_table._element)
 
     set_borders_table(images_table)
-    print(">>> Tabela de Fotos Criada")
 
     return images_table
 
