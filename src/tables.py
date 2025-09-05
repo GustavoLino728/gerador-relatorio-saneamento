@@ -279,20 +279,22 @@ def create_non_conformities_table(document, text):
 
 
 def create_water_params_table(document, text):
-    report_data = get_inspections_data()
-    inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
-    
-    if inspection_type == "esgoto":
-        return 
-    
     df_ncs = get_non_conformities()
     df_eta = df_ncs[df_ncs["Sigla"] == "ETA"]
+
+    if df_eta.empty:
+        return
     
     columns = ["QUALIDADE DA ÁGUA (UNIDADES)", "CLORO (mg.L )", "TURBIDEZ (NTU)", "OBSERVAÇÕES"]
     rows_data = [columns]
 
-    for row in df_eta.itertuples(index=False, name=None):
-        row_list = [getattr(row, col) if col in df_eta.columns else "" for col in columns]
+    for _, row in df_eta.iterrows():
+        row_list = [
+            row["Unidade"],  
+            "",              
+            "",             
+            ""               
+        ]
         rows_data.append(row_list)
 
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 1.5, 1.5, 3], align_left=False)
