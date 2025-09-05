@@ -89,19 +89,14 @@ def substitute_placeholders(document):
                 replaced_any = True
 
         if replaced_any and paragraph.runs:
-            # Mantém formatação do primeiro run
             first_run = paragraph.runs[0]
             first_run.text = full_text
             first_run.font.color.rgb = RGBColor(0, 0, 0)
-            # Limpa os demais runs
             for run in paragraph.runs[1:]:
                 run.text = ''
 
-    # Aplica nos parágrafos
     for p in document.paragraphs:
         replace_in_paragraph(p)
-
-    # Aplica nas tabelas
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -153,7 +148,7 @@ def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
             if margin is None:
                 margin = OxmlElement(tag)
                 tcMar.append(margin)
-            margin.set(qn('w:w'), str(int(value * 567)))  # 1 cm ≈ 567 twips
+            margin.set(qn('w:w'), str(int(value * 567))) 
             margin.set(qn('w:type'), 'dxa')
 
     set_margin('w:top', top)
@@ -168,7 +163,6 @@ def set_borders_table(table):
     """
     tbl = table._element
 
-    # Verifica se <w:tblPr> existe, senão cria
     tblPr_list = tbl.xpath('./w:tblPr')
     if tblPr_list:
         tblPr = tblPr_list[0]
