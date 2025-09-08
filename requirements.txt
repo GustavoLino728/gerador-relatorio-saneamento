@@ -1,3 +1,4 @@
+colorama==0.4.6
 et_xmlfile==2.0.0
 lxml==6.0.0
 numpy==2.3.2
@@ -8,5 +9,7 @@ python-dateutil==2.9.0.post0
 python-docx==1.2.0
 pytz==2025.2
 six==1.17.0
+tqdm==4.67.1
 typing_extensions==4.14.1
 tzdata==2025.2
+Unidecode==1.4.0

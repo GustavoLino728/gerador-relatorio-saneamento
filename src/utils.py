@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, date
 from excel import get_inspections_data
+from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
@@ -32,11 +33,9 @@ def search_paragraph(document, text):
     text: texto desejado para buscar
     """
     paragraphs_found_by_search = []
-    print(">>> Busca no documento iniciada")
     for i, p in enumerate(document.paragraphs):
         if text in p.text:
             paragraphs_found_by_search.append(i)
-            print(">>> Uma ocorrencia foi encontrada")
     return paragraphs_found_by_search
 
 def format_value(value):
@@ -69,6 +68,33 @@ def sanitize_value(value):
     """
     return unidecode(str(value).strip().lower())
 
+# Funções Utilitarias para outras funções, não utilizar
+def replace_in_paragraph(paragraph, replacements):
+        full_text = paragraph.text
+        replaced_any = False
+        for placeholder, value in replacements.items():
+            if placeholder in full_text:
+                full_text = full_text.replace(placeholder, value)
+                replaced_any = True
+
+        if replaced_any and paragraph.runs:
+            first_run = paragraph.runs[0]
+            first_run.text = full_text
+            first_run.font.color.rgb = RGBColor(0, 0, 0)
+            for run in paragraph.runs[1:]:
+                run.text = ''
+
+def set_margin(tag, value, tcMar):
+        if value is not None:
+            margin = tcMar.find(qn(tag))
+            if margin is None:
+                margin = OxmlElement(tag)
+                tcMar.append(margin)
+            margin.set(qn('w:w'), str(int(value * 567))) 
+            margin.set(qn('w:type'), 'dxa')
+
+# ---------------------------------------------------------------
+
 def substitute_placeholders(document):
     """
     Define um padrão de Strings no documento ({{x}}), e substitui no documento e nas tabelas, de acordo com o dicionário retornado com os dados da fiscalização.
@@ -79,34 +105,13 @@ def substitute_placeholders(document):
 
     replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
 
-    def replace_in_paragraph(paragraph):
-        full_text = paragraph.text
-        replaced_any = False
-        for placeholder, value in replacements.items():
-            if placeholder in full_text:
-                full_text = full_text.replace(placeholder, value)
-                replaced_any = True
-
-        if replaced_any and paragraph.runs:
-            # Mantém formatação do primeiro run
-            first_run = paragraph.runs[0]
-            first_run.text = full_text
-            first_run.font.color.rgb = RGBColor(0, 0, 0)
-            # Limpa os demais runs
-            for run in paragraph.runs[1:]:
-                run.text = ''
-
-    # Aplica nos parágrafos
     for p in document.paragraphs:
-        replace_in_paragraph(p)
-
-    # Aplica nas tabelas
+        replace_in_paragraph(p, replacements)
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    replace_in_paragraph(p)
-
+                    replace_in_paragraph(p, replacements)
 
                 
 def apply_background_color(color_hex: str):
@@ -119,6 +124,7 @@ def apply_background_color(color_hex: str):
     shading_elm.set(qn('w:color'), 'auto')
     shading_elm.set(qn('w:fill'), color_hex)
     return shading_elm
+
 
 def set_column_widths(table, *widths):
     """
@@ -134,6 +140,7 @@ def set_column_widths(table, *widths):
             if col_idx < len(row.cells):
                 row.cells[col_idx].width = Inches(width)
                 
+                
 def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
     """
     Define margens internas de cada célula de uma tabela (em Twips).
@@ -146,19 +153,11 @@ def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
         tcMar = OxmlElement('w:tcMar')
         tcPr.append(tcMar)
 
-    def set_margin(tag, value):
-        if value is not None:
-            margin = tcMar.find(qn(tag))
-            if margin is None:
-                margin = OxmlElement(tag)
-                tcMar.append(margin)
-            margin.set(qn('w:w'), str(int(value * 567)))  # 1 cm ≈ 567 twips
-            margin.set(qn('w:type'), 'dxa')
+    set_margin('w:top', top, tcMar)
+    set_margin('w:start', start, tcMar)
+    set_margin('w:bottom', bottom, tcMar)
+    set_margin('w:end', end, tcMar)
 
-    set_margin('w:top', top)
-    set_margin('w:start', start)
-    set_margin('w:bottom', bottom)
-    set_margin('w:end', end)
 
 def set_borders_table(table):
     """
@@ -167,7 +166,6 @@ def set_borders_table(table):
     """
     tbl = table._element
 
-    # Verifica se <w:tblPr> existe, senão cria
     tblPr_list = tbl.xpath('./w:tblPr')
     if tblPr_list:
         tblPr = tblPr_list[0]
@@ -186,3 +184,41 @@ def set_borders_table(table):
         tblBorders.append(border)
 
     tblPr.append(tblBorders)
+    
+    
+def to_rows_data(data, subtitle=None):
+    """
+    Converte um dicionário ou lista de tuplas em lista de listas compatível com create_generic_table.
+    
+    Parâmetros:
+    - data: dict ou lista de tuplas/listas [(chave, valor), ...]
+    - subtitle: opcional, string que vira linha mesclada no topo
+    
+    Retorno:
+    - rows_data: lista de listas pronta para create_generic_table
+    """
+    rows = []
+
+    if subtitle:
+        rows.append([subtitle])
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            rows.append([key, value])
+
+    elif isinstance(data, list):
+        for item in data:
+            rows.append(list(item))
+    
+    return rows
+
+
+def decide_report_type():
+    report_data = get_inspections_data()
+    inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
+    if inspection_type == "agua":
+        return Document(r"./data/RELATÓRIO_AGUA_MODELO.docx")
+    elif inspection_type == "esgoto":
+        return Document(r"./data/RELATÓRIO_ESGOTO_MODELO.docx")
+    elif inspection_type == "comercial":
+        return Document(r"./data/RELATÓRIO_COMERCIAL_MODELO.docx")
