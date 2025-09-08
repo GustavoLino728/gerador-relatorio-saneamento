@@ -69,11 +69,46 @@ def create_generic_table(document, rows_data, text_after_paragraph, col_widths=N
     paragraph_index = search_paragraph(document, text_after_paragraph)[0]
     document.paragraphs[paragraph_index]._element.addnext(table._element)
 
-    print("✅ Tabela genérica criada.")
 
-
+def create_abbreviations_table(document, text):
+    """
+    Cria a tabela de siglas mostrando o significado de cada sigla que pode aparecer no relatorio (FIXO)
+    Formato: 20 linhas x 2 colunas.
+    Linha 1: Cabeçalho (Sigla, Definição)
+    Linha 2-20: Siglas e Seus Significados
+    """
+    abbreviations = [
+        ["Sigla", "Definição"],
+        ["ETA", "Estação de Tratamento de Água"],
+        ["ETE", "Estação de Tratamento de Esgoto"],
+        ["EEab", "Estação Elevatória de água bruta"],
+        ["EEat", "Estação Elevatória de água tratada"],
+        ["REL", "Reservatório Elevado"],
+        ["RAP", "Reservatório Apoiado"],
+        ["CMB", "Conjunto Moto Bomba"],
+        ["GNR", "Gerência de Unidade de Negócios Regional"],
+        ["SAA", "Sistemas de Abastecimento de Água"],
+        ["SES", "Sistemas de Esgotamento Sanitário"],
+        ["IUA", "Índice de Universalização do Abastecimento de Água"],
+        ["IUE", "Índice de Universalização de Coleta de Esgotos Sanitários"],
+        ["IUT", "Índice de Universalização de Tratamento de Esgotos Sanitários"],
+        ["ICA", "Índice de Cobertura de Abastecimento de Água"],
+        ["ICE", "Índice de Cobertura de Esgotamento Sanitário"],
+        ["IPD", "Índice de Perdas na Distribuição"],
+        ["IQAP", "Índice da Qualidade da Água Potável"],
+        ["NBR", "Normas Brasileiras"],
+        ["CSAN", "Coordenadoria de Saneamento da ARPE"]
+    ]
+    
+    create_generic_table(document, abbreviations, text, col_widths=[1, 9], align_left=True)
+    
+    
 def create_general_information_table(document, text):
-    """Cria a tabela de Informações gerais da fiscalização. Sobre o regulador, o regulado e o titular"""
+    """
+    Cria a tabela de Informações gerais da fiscalização. Sobre o regulador, o regulado e o titular
+    Formato: 17 linhas x 2 colunas.
+    Linha 1/6/11: Titulos (3.1 DO TITULAR, 3.2 DO REGULADO, 3.3 DO REGULADOR)
+    """
     report_data = get_inspections_data()
     
     general_info = [
@@ -97,48 +132,15 @@ def create_general_information_table(document, text):
     ]
     
     create_generic_table(document, rows_data=general_info, text_after_paragraph=text, col_widths=[1, 9], align_left=True)
-    
-    
-def create_abbreviations_table(document, text):
-    abbreviations = [
-        ["Sigla", "Definição"],
-        ["ETA", "Estação de Tratamento de Água"],
-        ["ETE", "Estação de Tratamento de Esgoto"],
-        ["EEab", "Estação Elevatória de água bruta"],
-        ["EEat", "Estação Elevatória de água tratada"],
-        ["REL", "Reservatório Elevado"],
-        ["RAP", "Reservatório Apoiado"],
-        ["CMB", "Conjunto Moto Bomba"],
-        ["GNR", "Gerência de Unidade de Negócios Regional"],
-        ["SAA", "Sistemas de Abastecimento de Água"],
-        ["SES", "Sistemas de Esgotamento Sanitário"],
-        ["IUA", "Índice de Universalização do Abastecimento de Água"],
-        ["IUE", "Índice de Universalização de Coleta de Esgotos Sanitários"],
-        ["IUT", "Índice de Universalização de Tratamento de Esgotos Sanitários"],
-        ["ICA", "Índice de Cobertura de Abastecimento de Água"],
-        ["ICE", "Índice de Cobertura de Esgotamento Sanitário"],
-        ["IPD", "Índice de Perdas na Distribuição"],
-        ["IQAP", "Índice da Qualidade da Água Potável"]
-    ]
-    
-    create_generic_table(document, abbreviations, text, col_widths=[1, 9], align_left=True)
-    
-    
-def create_last_report_table(document, text):
-    report_data = format_dict_values(get_inspections_data())
-    last_report_data = {
-        "ÚLTIMA FISCALIZAÇÃO": report_data["Ultima Fiscalização"],
-        "TOTAL DE NCs DA ÚLTIMA FISCALIZAÇÂO": report_data["Total NCS UF"],
-        "DESDOBRAMENTOS": report_data["Desdobramentos"],
-        "NCs RESIDUAIS": report_data["NCS Residuais"]
-    }
-    
-    rows = to_rows_data(last_report_data, subtitle="CONTEXTO")
-    create_generic_table(document, rows, text, col_widths=[2.5, 5], cell_padding=0.4, align_left=True)
 
 
 def create_documents_table(document, text):
-    """Cria a tabela relativa as documentações necessarias para o processo, se elas foram enviadas ou não e porquê"""
+    """
+    Cria a tabela 1 - relativa as documentações necessarias para o processo, se elas foram enviadas ou não e porquê
+    Formato: 12 linhas x 4 colunas.
+    Linha 1: cabeçalho (DOCUMENTAÇÃO, SIM, NÃO, OBSERVAÇÕES)
+    Linha 2-12: valores correspondentes
+    """
     df_documents = documents_excel.copy()
     table = document.add_table(rows=1, cols=len(df_documents.columns))
     set_column_widths(table, 6.5, 0.5, 0.5, 6.5)
@@ -155,10 +157,14 @@ def create_documents_table(document, text):
     paragraph_index = search_paragraph(document, text)[0]
     document.paragraphs[paragraph_index]._element.addnext(table._element)
 
-    print("✅ Tabela de documentos criada.")
-
 
 def create_town_units_table(document, text):
+    """
+    Cria a tabela 2 - Lista de Todas as Unidades do Municipio, de acordo com o tipo da fiscalização, puxando da planilha (Lista-SES-e-SAA) que vem da compesa
+    Formato: 1+N linhas x 4 colunas.
+    Linha 1: cabeçalho (ITEM, SISTEMA, UNIDADE, OBSERVAÇÃO)
+    Linha 2-8: valores correspondentes
+    """
     report_data = get_inspections_data()
     town_name = sanitize_value(report_data["Municipio"])
     inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
@@ -191,7 +197,36 @@ def create_town_units_table(document, text):
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.3, 4, 6, 1.7], align_left=True)
 
 
+def create_last_report_table(document, text):
+    """
+    Cria a tabela 3 - Com informações relevantes a última fiscalização naquele municipio
+    Formato: 5 linhas x 2 colunas.
+    Linha 1: cabeçalho (Contexto)
+    Linha 2: Ultima Fiscalização
+    Linha 3: Total NCs da Ultima Fiscalização
+    Linha 4: DESDOBRAMENTOS
+    Linha 5: NCs RESIDUAIS
+    """
+    report_data = format_dict_values(get_inspections_data())
+    last_report_data = {
+        "ÚLTIMA FISCALIZAÇÃO": report_data["Ultima Fiscalização"],
+        "TOTAL DE NCs DA ÚLTIMA FISCALIZAÇÂO": report_data["Total NCS UF"],
+        "DESDOBRAMENTOS": report_data["Desdobramentos"],
+        "NCs RESIDUAIS": report_data["NCS Residuais"]
+    }
+    
+    rows = to_rows_data(last_report_data, subtitle="CONTEXTO")
+    create_generic_table(document, rows, text, col_widths=[2.5, 5], cell_padding=0.4, align_left=True)
+
+
 def create_statistics_table(document, text):
+    """
+    Cria a tabela 4 - de Informações sobre Pernambuco em Geral (Fixa) e o Municipio da fiscalização (que é retirado da planilha - Estatisticas). 
+    Puxa os dados sobre EIA, EAE, EIE, EAT, EIT, DAP
+    Formato: 8 linhas x 3 colunas.
+    Linha 1: cabeçalho (INFORMAÇÃO, PERNAMBUCO, "Município")
+    Linha 2-8: valores correspondentes
+    """
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
     town_name = report_data["Municipio"].upper()
@@ -221,12 +256,10 @@ def create_statistics_table(document, text):
 
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[6, 1.5, 1.5], align_left=True, font_size=10)
 
-    print("✅ Tabela de estatísticas criada.")
-
 
 def create_quality_index_table(document, text):
     """
-    Cria a tabela de indicadores de qualidade para o município.
+    Cria a tabela 5 - de indicadores de qualidade para o município.
     Formato: 2 linhas x 8 colunas.
     Linha 1: cabeçalho ("Município" + indicadores)
     Linha 2: valores correspondentes
@@ -254,12 +287,14 @@ def create_quality_index_table(document, text):
     rows_data = [["Município"] + selected_columns, [report_town] + valores_tabela]
 
     create_generic_table(document, rows_data, text, col_widths=[3] + [1]*7, align_left=True, font_size=10)
-    print(f"✅ Tabela de indicadores de qualidade criada para {report_town}")
 
 
 def create_non_conformities_table(document, text):
     """
     Cria a tabela de não conformidades.
+    Formato: 1+N linhas x 6 colunas.
+    Linha 1: cabeçalho (Unidade, Não Conformidad, Nome da Foto, Artigo, Enquadramento, Determinações)
+    Linha 2-N: Dados correspondentes
     """
     df_ncs = get_non_conformities()
 
@@ -279,6 +314,13 @@ def create_non_conformities_table(document, text):
 
 
 def create_water_params_table(document, text):
+    """
+    Cria a tabela de Parametros de Agua, referente a tabela 7 do relatorio de agua. Aparece caso haja pelo menos uma unidade ETA entre as NCs. 
+    Lista essas unidades e o analista preenche os campos (CLORO (mg.L ), TURBIDEZ (NTU), OBSERVAÇÕES)
+    Formato: 1+N linhas x 4 colunas.
+    Linha 1: cabeçalho (QUALIDADE DA ÁGUA (UNIDADES), CLORO (mg.L ), TURBIDEZ (NTU), OBSERVAÇÕES)
+    Linha 2-N: Dados correspondentes
+    """
     df_ncs = get_non_conformities()
     df_eta = df_ncs[df_ncs["Sigla"] == "ETA"]
 
@@ -299,6 +341,42 @@ def create_water_params_table(document, text):
 
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 1.5, 1.5, 3], align_left=False)
     
+def create_sewage_params_table(document, text):
+    """
+    Cria a tabela de Parametros de Qualidade do Efluente. Referente a tabela 7 do relatorio de esgoto. Aparece caso haja pelo menos uma unidade ETE entre as NCs. Lista essas unidades e o analista preenche os campos 
+    Formato: 1+N linhas x 3 colunas.
+    Linha 1: cabeçalho (QUALIDADE DO EFLUENTE (UNIDADES), DBO filtrada(mg O2/L), OBSERVAÇÕES)
+    Linha 2-N: Dados correspondentes
+    """
+    df_ncs = get_non_conformities()
+    df_ete = df_ncs[df_ncs["Sigla"] == "ETE"]
+
+    if df_ete.empty:
+        return
+    
+    columns = ["QUALIDADE DO EFLUENTE (UNIDADES)", "DBO filtrada (mg O2/L)", "OBSERVAÇÕES"]
+    rows_data = [columns]
+
+    for _, row in df_ete.iterrows():
+        row_list = [
+            row["Unidade"],  
+            "",              
+            ""               
+        ]
+        rows_data.append(row_list)
+
+    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 2, 3], align_left=False)
+
+def create_table_7(document):
+    """Decide qual das tabelas 7 deve ser gerada com base no tipo da fiscalização"""
+    report_data = get_inspections_data()
+    inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
+    if inspection_type == 'agua':
+        create_water_params_table(document, "Tabela 7 - Parâmetros da qualidade da água.")
+    elif inspection_type == 'esgoto':
+        create_water_params_table(document, "Tabela 7 - Parâmetro(s) da qualidade do efluente.")
+    else:
+        print("❌ Tipo de Fiscalização não válido, insira um válido: Agua ou Esgoto")
     
 def format_header_cell(cell, text, font_size=10, font_name="Arial", bg_color="D9D9D9"):
     """Formata célula de cabeçalho: negrito, centralizado e fundo colorido."""

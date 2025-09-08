@@ -80,4 +80,3 @@ def divide_images(document, last_position, list_of_images_path):
     for i in range(0, len(list_of_images_path), 6):
         table_images = list_of_images_path[i:i+6]
         last_position = create_table_images(document, last_position, table_images, get_non_conformities())
-        print(f">>> {i}° bloco concluido")

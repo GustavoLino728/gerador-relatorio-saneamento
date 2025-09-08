@@ -33,11 +33,9 @@ def search_paragraph(document, text):
     text: texto desejado para buscar
     """
     paragraphs_found_by_search = []
-    print(">>> Busca no documento iniciada")
     for i, p in enumerate(document.paragraphs):
         if text in p.text:
             paragraphs_found_by_search.append(i)
-            print(">>> Uma ocorrencia foi encontrada")
     return paragraphs_found_by_search
 
 def format_value(value):
@@ -70,17 +68,8 @@ def sanitize_value(value):
     """
     return unidecode(str(value).strip().lower())
 
-def substitute_placeholders(document):
-    """
-    Define um padrão de Strings no documento ({{x}}), e substitui no documento e nas tabelas, de acordo com o dicionário retornado com os dados da fiscalização.
-    Caso houver chaves iguais as Strings realiza a troca. Ex: ({{nome}}) no documento, ele percorre o dicionario e caso aja a chave nome ele troca ({{nome}})
-    pelo valor correspondente a chave nome.
-    """
-    excel_data = get_inspections_data()
-
-    replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
-
-    def replace_in_paragraph(paragraph):
+# Funções Utilitarias para outras funções, não utilizar
+def replace_in_paragraph(paragraph, replacements):
         full_text = paragraph.text
         replaced_any = False
         for placeholder, value in replacements.items():
@@ -95,14 +84,34 @@ def substitute_placeholders(document):
             for run in paragraph.runs[1:]:
                 run.text = ''
 
+def set_margin(tag, value, tcMar):
+        if value is not None:
+            margin = tcMar.find(qn(tag))
+            if margin is None:
+                margin = OxmlElement(tag)
+                tcMar.append(margin)
+            margin.set(qn('w:w'), str(int(value * 567))) 
+            margin.set(qn('w:type'), 'dxa')
+
+# ---------------------------------------------------------------
+
+def substitute_placeholders(document):
+    """
+    Define um padrão de Strings no documento ({{x}}), e substitui no documento e nas tabelas, de acordo com o dicionário retornado com os dados da fiscalização.
+    Caso houver chaves iguais as Strings realiza a troca. Ex: ({{nome}}) no documento, ele percorre o dicionario e caso aja a chave nome ele troca ({{nome}})
+    pelo valor correspondente a chave nome.
+    """
+    excel_data = get_inspections_data()
+
+    replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
+
     for p in document.paragraphs:
-        replace_in_paragraph(p)
+        replace_in_paragraph(p, replacements)
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
                 for p in cell.paragraphs:
-                    replace_in_paragraph(p)
-
+                    replace_in_paragraph(p, replacements)
 
                 
 def apply_background_color(color_hex: str):
@@ -115,6 +124,7 @@ def apply_background_color(color_hex: str):
     shading_elm.set(qn('w:color'), 'auto')
     shading_elm.set(qn('w:fill'), color_hex)
     return shading_elm
+
 
 def set_column_widths(table, *widths):
     """
@@ -130,6 +140,7 @@ def set_column_widths(table, *widths):
             if col_idx < len(row.cells):
                 row.cells[col_idx].width = Inches(width)
                 
+                
 def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
     """
     Define margens internas de cada célula de uma tabela (em Twips).
@@ -142,19 +153,11 @@ def set_table_margins(cell, top=None, start=None, bottom=None, end=None):
         tcMar = OxmlElement('w:tcMar')
         tcPr.append(tcMar)
 
-    def set_margin(tag, value):
-        if value is not None:
-            margin = tcMar.find(qn(tag))
-            if margin is None:
-                margin = OxmlElement(tag)
-                tcMar.append(margin)
-            margin.set(qn('w:w'), str(int(value * 567))) 
-            margin.set(qn('w:type'), 'dxa')
+    set_margin('w:top', top, tcMar)
+    set_margin('w:start', start, tcMar)
+    set_margin('w:bottom', bottom, tcMar)
+    set_margin('w:end', end, tcMar)
 
-    set_margin('w:top', top)
-    set_margin('w:start', start)
-    set_margin('w:bottom', bottom)
-    set_margin('w:end', end)
 
 def set_borders_table(table):
     """
@@ -182,6 +185,7 @@ def set_borders_table(table):
 
     tblPr.append(tblBorders)
     
+    
 def to_rows_data(data, subtitle=None):
     """
     Converte um dicionário ou lista de tuplas em lista de listas compatível com create_generic_table.
@@ -207,6 +211,7 @@ def to_rows_data(data, subtitle=None):
             rows.append(list(item))
     
     return rows
+
 
 def decide_report_type():
     report_data = get_inspections_data()
