@@ -3,7 +3,7 @@ from docx.shared import Pt
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from unidecode import unidecode
-from excel import get_non_conformities, get_inspections_data, list_of_all_units, documents_excel, town_statistics
+from excel import get_non_conformities, get_inspections_data, units_df, documents_excel, town_statistics
 from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table, to_rows_data
 import pandas as pd
 
@@ -127,7 +127,7 @@ def create_general_information_table(document, text):
         ["Diretor Presidente:", "Carlos Porto Filho"],
         ["Endereço:", "Avenida Conselheiro Rosa e Silva, 975, Aflitos, Recife/PE, CEP: 52.050-020."],
         ["Responsáveis pela fiscalização:", f"{report_data['Analista 1']} e {report_data['Analista 2']}"],
-        ["Período da Fiscalização:", report_data["Periodo"]],
+        ["Período da Fiscalização:", report_data["Período da Fiscalização"]],
         ["Tipo de Fiscalização:", "Direta e periódica."]
     ]
     
@@ -160,41 +160,53 @@ def create_documents_table(document, text):
 
 def create_town_units_table(document, text):
     """
-    Cria a tabela 2 - Lista de Todas as Unidades do Municipio, de acordo com o tipo da fiscalização, puxando da planilha (Lista-SES-e-SAA) que vem da compesa
-    Formato: 1+N linhas x 4 colunas.
-    Linha 1: cabeçalho (ITEM, SISTEMA, UNIDADE, OBSERVAÇÃO)
-    Linha 2-8: valores correspondentes
+    Cria a tabela 2 - Lista de Todas as Unidades do Município
+    com base na planilha 'Cadastrar Unidades'.
+
+    Estrutura esperada da planilha (linha 4 como cabeçalho):
+    Municipio | Sistema | Tipo | Unidade | Observação
     """
+
     report_data = get_inspections_data()
     town_name = sanitize_value(report_data["Municipio"])
     inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
 
-    units_df = list_of_all_units.copy()
     units_df.columns = units_df.columns.str.strip()
-    units_df["TOWN_NORMALIZED"] = units_df["MUNICÍPIO"].apply(sanitize_value)
-    units_df["WATER_SEWER_NORMALIZED"] = units_df["ÁGUA/ESGOTO"].apply(sanitize_value)
 
-    filtered_units = units_df[units_df["TOWN_NORMALIZED"] == town_name]
+    units_df["MUNICIPIO_NORMALIZED"] = units_df["Municipio"].apply(sanitize_value)
+    units_df["TIPO_NORMALIZED"] = units_df["Tipo"].apply(sanitize_value)
 
-    if "esgoto" in inspection_type.lower():
-        filtered_units = filtered_units[filtered_units["WATER_SEWER_NORMALIZED"].str.contains("esgoto")]
+    filtered_units = units_df[units_df["MUNICIPIO_NORMALIZED"] == town_name]
+
+    if "agua" in inspection_type:
+        allowed_types = ["eea", "eta", "rel e rap"]
+    elif "esgoto" in inspection_type:
+        allowed_types = ["eee", "ete"]
     else:
-        filtered_units = filtered_units[filtered_units["WATER_SEWER_NORMALIZED"].str.contains("agua")]
+        print(f"⚠️ Tipo de fiscalização não reconhecido: {inspection_type}")
+        return
+
+    filtered_units = filtered_units[filtered_units["TIPO_NORMALIZED"].isin(allowed_types)]
 
     if filtered_units.empty:
         print("⚠️ Nenhuma unidade encontrada para este município/tipo de fiscalização.")
         return
 
+    filtered_units = filtered_units.sort_values(by="Unidade", key=lambda col: col.str.lower())
+    
     filtered_units.insert(0, "ITEM", range(1, len(filtered_units) + 1))
-    filtered_units["OBSERVAÇÃO"] = ""
+    final_df = filtered_units[["ITEM", "Sistema", "Unidade", "Observação"]]
+    final_df = final_df.rename(columns={
+        "Sistema": "SISTEMA",
+        "Unidade": "UNIDADE",
+        "Observação": "OBSERVAÇÃO"
+    })
 
-    final_df = filtered_units[["ITEM", "SISTEMA", "UNIDADE", "OBSERVAÇÃO"]]
-
-    rows_data = [final_df.columns.tolist()]  
+    rows_data = [final_df.columns.tolist()] 
     for row in final_df.itertuples(index=False, name=None):
         rows_data.append(list(row))
-
-    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.3, 4, 6, 1.7], align_left=True)
+        
+    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.8, 4, 6, 2], align_left=True)
 
 
 def create_last_report_table(document, text):
@@ -209,7 +221,7 @@ def create_last_report_table(document, text):
     """
     report_data = format_dict_values(get_inspections_data())
     last_report_data = {
-        "ÚLTIMA FISCALIZAÇÃO": report_data["Ultima Fiscalização"],
+        "ÚLTIMA FISCALIZAÇÃO": report_data["Ultima Fiscalização (Data)"],
         "TOTAL DE NCs DA ÚLTIMA FISCALIZAÇÂO": report_data["Total NCS UF"],
         "DESDOBRAMENTOS": report_data["Desdobramentos"],
         "NCs RESIDUAIS": report_data["NCS Residuais"]
@@ -374,7 +386,7 @@ def create_table_7(document):
     if inspection_type == 'agua':
         create_water_params_table(document, "Tabela 7 - Parâmetros da qualidade da água.")
     elif inspection_type == 'esgoto':
-        create_water_params_table(document, "Tabela 7 - Parâmetro(s) da qualidade do efluente.")
+        create_sewage_params_table(document, "Tabela 7 - Parâmetros da qualidade do efluente.")
     else:
         print("❌ Tipo de Fiscalização não válido, insira um válido: Agua ou Esgoto")
     

@@ -2,7 +2,7 @@
 *.env
 __pycache__/
 # /data/
-/reports/
+# /reports/
 # /assets/
 /build/
 /dist/
