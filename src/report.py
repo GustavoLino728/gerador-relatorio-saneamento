@@ -1,5 +1,4 @@
-from images import get_images_from_dir
-from images import divide_images
+from images import create_all_appendix_images
 from utils import substitute_placeholders, next_filename, search_paragraph, decide_report_type
 from tables import create_non_conformities_table, create_town_units_table, create_documents_table, create_statistics_table, create_quality_index_table, create_general_information_table, create_abbreviations_table, create_last_report_table, create_table_7
 from tqdm import tqdm
@@ -20,7 +19,7 @@ def generate_report():
         ("Índices de qualidade", lambda: create_quality_index_table(document, "Tabela 5 - Principais Indicadores Regulatórios do município {{Municipio}}.")),
         ("Não conformidades", lambda: create_non_conformities_table(document, "Tabela 6 - Lista de NCs do {{SAA ou SEE}} {{Municipio}}")),
         ("Tabela 7", lambda: create_table_7(document)),
-        ("Inserir imagens", lambda: divide_images(document, document.paragraphs[search_paragraph(document,"APÊNDICE 1 - NÃO CONFORMIDADES")[-1]], get_images_from_dir())),
+        ("Inserir imagens", lambda: create_all_appendix_images(document, document.paragraphs[search_paragraph(document,"APÊNDICE 1 - NÃO CONFORMIDADES")[-1]], document.paragraphs[search_paragraph(document,"APÊNDICE 2 – CONDIÇÕES GERAIS")[-1]])),
         ("Substituir placeholders", lambda: substitute_placeholders(document)),
         ("Salvar documento", lambda: document.save(next_filename())),
     ]

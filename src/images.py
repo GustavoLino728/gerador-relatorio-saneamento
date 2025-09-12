@@ -8,64 +8,88 @@ from utils import set_borders_table
 
 
 def get_images_from_dir(path="./assets"):
-    """Retorna o caminho de todas as fotos que estão na pasta assets (.jpg, .jpeg, .png)"""
-    all_files = os.listdir(path)
-    all_images = [f for f in all_files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-    return [os.path.join(path, f) for f in all_images]
-
-
-# def resize_images(path="../assets", size=(500, 500)):
-#     for filename in os.listdir(path):
-#         if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-#             image_path = os.path.join(path, filename)
-#             img = Image.open(image_path)
-#             img_resized = img.resize(size, Image.LANCZOS)
-#             img_resized.save(image_path)
-#     print(">>> Imagens redimensionadas para 210x210")
-
-
-def create_table_images(document, last_position, list_of_images_path, df_non_conformities):
     """
-    Cria a tabela de fotos das não conformidades, com legenda e subtitulo
+    Retorna as imagens organizadas por subpasta (apêndice).
+    Estrutura de saída:
+    {
+        "fotos_nao_conformidades": ["./assets/fotos_nao_conformidades/nc1.jpg", "./assets/fotos_nao_conformidades/nc2.png"],
+        "fotos_informacoes_gerais": ["./assets/fotos_informacoes_gerais/geral1.jpg", "./assets/fotos_informacoes_gerais/geral2.png"]
+    }
+    """
+    result = {}
+    for root, dirs, files in os.walk(path):
+        folder_name = os.path.basename(root)
+        images = [os.path.join(root, f) for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        if images:
+            result[folder_name] = images
+    return result
+
+
+def build_caption_map(df, col_img="Nome da Foto", col_unit="Unidade", col_desc="Não Conformidade"):
+    """
+    Constrói um dicionário {nome_foto: legenda} a partir de um dataframe.
+    """
+    captions = {}
+    for _, row in df.iterrows():
+        image_name = row[col_img]
+        captions[image_name] = f"{image_name} - {row[col_unit]}: {row[col_desc]}"
+    return captions
+
+
+def resize_images(path="../assets", size=(250, 250)):
+    """
+    Redimensiona a imagem para o tamnho especifico e padrão
+    """
+    for root, dirs, files in os.walk(path):
+        for filename in files:
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                image_path = os.path.join(root, filename)
+                img = Image.open(image_path)
+                img_resized = img.resize(size, Image.LANCZOS)
+                img_resized.save(image_path)
+
+
+def create_table_images(document, insert_coord, list_of_images_path, captions=None, title_text="Registros Fotográficos"):
+    """
+    Cria tabela de imagens genérica com legenda.
     - document: Arquivo Word (Objeto)
-    - last_position: A posição onde começa a ser inserido as imagens
-    - list_of_images_path: Lista dos caminhos de todas as imagens
-    - df_non_conformities: Dataframe das não conformidades usadas para a legenda das imagens
+    - insert_coord: Onde o bloco será inserido
+    - list_of_images_path: lista com caminhos das imagens
+    - captions: dict {nome_imagem: legenda}, se None usa só o nome
+    - title_text: título exibido antes da tabela
     """
-
+    
     space_before = document.add_paragraph()
     space_after = document.add_paragraph()
     space_before_element = space_before._element
     space_after_element = space_after._element
 
-    title = document.add_paragraph("Registros Fotográficos das Não Conformidades")
+    title = document.add_paragraph(title_text)
     title.style = 'Arial10'
-    images_table = document.add_table(rows=6, cols=2)
+
+    num_images = len(list_of_images_path)
+    num_rows = ((num_images + 1) // 2) * 2   
+    images_table = document.add_table(rows=num_rows, cols=2)
     
-    for i in range(len(list_of_images_path)):
+    for i, img_path in enumerate(list_of_images_path):
         image_line = i // 2 * 2
         subtitle_line = image_line + 1
-        collum = i % 2
+        column = i % 2
+        
+        images_table.cell(image_line, column).paragraphs[0].add_run().add_picture(img_path, width=Inches(4.3))
 
-        images_table.cell(image_line, collum).paragraphs[0].add_run().add_picture(list_of_images_path[i], width=Inches(4.3))
-        image_name = os.path.splitext(os.path.basename(list_of_images_path[i]))[0]
-        line = df_non_conformities[df_non_conformities["Nome da Foto"] == image_name]
+        image_name = os.path.splitext(os.path.basename(img_path))[0]
 
-        if not line.empty:
-            unit = line.iloc[0]["Unidade"]
-            description = line.iloc[0]["Não Conformidade"]
-            subtitle = f"{image_name} - {unit}: {description}"
-        else:
-            subtitle = f"{image_name} - NÃO ENCONTRADO"
+        subtitle = captions.get(image_name, f"{image_name} - SEM LEGENDA") if captions else image_name
 
-        cell = images_table.cell(subtitle_line, collum)
+        cell = images_table.cell(subtitle_line, column)
         paragraph = cell.paragraphs[0]
         paragraph.style = 'Arial10'
         run = paragraph.add_run(subtitle)
         run.font.name = 'Arial'
         run.font.size = Pt(10)
 
-    last_position._element.addnext(space_before_element)
+    insert_coord._element.addnext(space_before_element)
     space_before_element.addnext(title._element)
     title._element.addnext(space_after_element)
     space_after_element.addnext(images_table._element)
@@ -75,8 +99,27 @@ def create_table_images(document, last_position, list_of_images_path, df_non_con
     return images_table
 
 
-def divide_images(document, last_position, list_of_images_path):
-    """Divide as imagens em blocos de 6 imagens cada"""
-    for i in range(0, len(list_of_images_path), 6):
-        table_images = list_of_images_path[i:i+6]
-        last_position = create_table_images(document, last_position, table_images, get_non_conformities())
+def divide_images(document, insert_coord, list_of_images_path, captions=None, block_size=6):
+    """Divide imagens em blocos de N (padrão 6) e cria tabelas"""
+    for i in range(0, len(list_of_images_path), block_size):
+        table_images = list_of_images_path[i:i+block_size]
+        insert_coord = create_table_images(document, insert_coord, table_images, captions)
+        
+        
+def create_all_appendix_images(document, text_nc, text_info):
+    """
+    Cria as tabelas de imagens para todos os apêndices (NCs e Informações Gerais).
+    - document: objeto Word
+    - text_nc: posição no doc onde começam as NCs
+    - text_info: posição no doc onde começam as Infos Gerais
+    """
+
+    images_by_folder = get_images_from_dir()
+
+    if "fotos_nao_conformidades" in images_by_folder:
+        df_nc = get_non_conformities()
+        captions_nc = build_caption_map(df_nc)
+        divide_images(document, text_nc, images_by_folder["fotos_nao_conformidades"], captions=captions_nc, block_size=6)
+
+    if "fotos_informacoes_gerais" in images_by_folder:
+        divide_images(document, text_info, images_by_folder["fotos_informacoes_gerais"], captions=None, block_size=6)

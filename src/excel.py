@@ -7,10 +7,9 @@ spreadsheet = pd.ExcelFile(SHEET_PATH)
 
 inspections = pd.read_excel(spreadsheet, sheet_name="Fiscalizações")
 non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades", header=5)
-list_of_all_units = pd.read_excel(spreadsheet, sheet_name="Lista-SES-e-SAA")
 documents_excel = pd.read_excel(spreadsheet, sheet_name="Envio de Documentos")
 town_statistics = pd.read_excel(spreadsheet, sheet_name="Estatisticas ")
-# units_df = pd.read_excel("Unidades.xlsx")
+units_df = pd.read_excel(spreadsheet, sheet_name="Cadastrar Unidades", header=3)
 
 ete_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs ETE")
 eee_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs EEE")
@@ -48,19 +47,6 @@ def get_inspections_data():
     else:
         print("❌ Tipo de Fiscalização não válido, insira um válido: Agua ou Esgoto")
     return data
-
-
-# def get_units():
-#     """Retorna as unidades do relatório atual a partir da planilha de Unidades."""
-#     this_report_id = get_this_report()
-#     this_report_units = units_df[units_df["ID da Fiscalização"] == this_report_id]
-
-#     this_report_units = this_report_units.copy()
-#     this_report_units.columns = this_report_units.columns.str.strip()
-#     this_report_units["TOWN_NORMALIZED"] = this_report_units["MUNICÍPIO"]
-#     this_report_units["WATER_SEWER_NORMALIZED"] = this_report_units["ÁGUA/ESGOTO"]
-
-#     return this_report_units
 
 
 def get_non_conformities():
