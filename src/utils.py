@@ -6,25 +6,43 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
 from unidecode import unidecode
+from paths import DATA_PATH, REPORTS_PATH, ASSETS_PATH
 
-REPORT_DIR = "./reports/"
-REPORT_NAME = "RELATÓRIO MODELO"
-REPORT_EXT = ".docx"
 
 def next_filename():
     """Monta o nome do arquivo com o ID da fiscalização e caso houver arquivos já existentes incrementa em numero ao lado. EX: Relatório - ID 2 (1)"""
+
     inspections_data = get_inspections_data()
     id = str(int(inspections_data["ID da Fiscalização"])) 
-    name = f"RELATÓRIO - ID {id}{REPORT_EXT}"
-    path = os.path.join(REPORT_DIR, name)
+    name = f"RELATÓRIO - ID {id}.docx"
+    path = os.path.join(REPORTS_PATH, name)
 
     counter = 1
     while os.path.exists(path):
-        name = f"RELATÓRIO - ID {id} ({counter}){REPORT_EXT}"
-        path = os.path.join(REPORT_DIR, name)
+        name = f"RELATÓRIO - ID {id} ({counter}).docx"
+        path = os.path.join(REPORTS_PATH, name)
         counter += 1
     
     return path
+
+
+def get_images_from_dir(path=ASSETS_PATH):
+    """
+    Retorna as imagens organizadas por subpasta (apêndice).
+    Estrutura de saída:
+    {
+        "fotos_nao_conformidades": ["./assets/fotos_nao_conformidades/nc1.jpg", "./assets/fotos_nao_conformidades/nc2.png"],
+        "fotos_condicoes_gerais": ["./assets/fotos_condicoes_gerais/geral1.jpg", "./assets/fotos_condicoes_gerais/geral2.png"]
+    }
+    """
+    result = {}
+    for root, dirs, files in os.walk(path):
+        folder_name = os.path.basename(root)
+        images = [os.path.join(root, f) for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        if images:
+            result[folder_name] = images
+    return result
+
 
 def search_paragraph(document, text):
     """
@@ -213,12 +231,56 @@ def to_rows_data(data, subtitle=None):
     return rows
 
 
+def insert_blank_lines(document, position_paragraph, n_lines=1):
+    """
+    Insere n linhas em branco após o parágrafo informado.
+    """
+    last_elem = position_paragraph
+    for _ in range(n_lines):
+        blank_paragraph = document.add_paragraph()
+        blank_paragraph.add_run()
+        last_elem._element.addnext(blank_paragraph._element)
+        last_elem = blank_paragraph
+    return last_elem
+
+
+def insert_general_condition_section(document, text):
+    """
+    Insere tanto no sumário quanto o apêndice de fotos caso a pasta de informações gerais contenha alguma imagem
+    document: Document
+    text_summary: Texto para ter como refêrencia onde irá inserir as informações no sumário
+    text_appendix: Texto para ter como refêrencia onde irá inserir as informações no apêndice
+    """
+    images_by_folder = get_images_from_dir()
+    
+    if "fotos_condicoes_gerais" in images_by_folder and images_by_folder["fotos_condicoes_gerais"]:
+        pos_summary_idx, pos_appendix_idx = search_paragraph(document, text)
+        position_summary = document.paragraphs[pos_summary_idx]
+        position_appendix = document.paragraphs[pos_appendix_idx]
+
+        summary_paragraph = document.add_paragraph()
+        summary_run = summary_paragraph.add_run("APÊNDICE 2 – CONDIÇÕES GERAIS")
+        summary_run.font.size = Pt(10)    
+
+        position_summary._element.addnext(summary_paragraph._element)
+
+        insert_position = insert_blank_lines(document, position_appendix, n_lines=3)
+
+        appendix_paragraph = document.add_paragraph()
+        appendix_run = appendix_paragraph.add_run("APÊNDICE 2 – CONDIÇÕES GERAIS")
+        appendix_run.font.size = Pt(10) 
+        appendix_run.bold = True         
+
+        insert_position._element.addnext(appendix_paragraph._element)
+
 def decide_report_type():
     report_data = get_inspections_data()
+    if report_data is None:
+        return None
     inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
     if inspection_type == "agua":
-        return Document(r"./data/RELATÓRIO_AGUA_MODELO.docx")
+        return  Document(os.path.join(DATA_PATH, "RELATÓRIO_AGUA_MODELO.docx"))
     elif inspection_type == "esgoto":
-        return Document(r"./data/RELATÓRIO_ESGOTO_MODELO.docx")
+        return Document(os.path.join(DATA_PATH, "RELATÓRIO_ESGOTO_MODELO.docx"))
     elif inspection_type == "comercial":
-        return Document(r"./data/RELATÓRIO_COMERCIAL_MODELO.docx")
+        return Document(os.path.join(DATA_PATH, "RELATÓRIO_COMERCIAL_MODELO.docx"))
