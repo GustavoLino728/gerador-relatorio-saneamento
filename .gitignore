@@ -4,5 +4,9 @@ __pycache__/
 # /data/
 # /reports/
 # /assets/
-/build/
-/dist/
+build/
+dist/
+src/gerador-relatorio-saneamento.rar
+icone_exe.ico
+main.exe
+main.spec

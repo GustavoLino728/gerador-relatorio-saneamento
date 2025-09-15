@@ -4,25 +4,7 @@ from docx.shared import Inches, Pt
 from docx.oxml.shared import OxmlElement
 from docx.oxml.ns import qn
 from excel import get_non_conformities 
-from utils import set_borders_table
-
-
-def get_images_from_dir(path="./assets"):
-    """
-    Retorna as imagens organizadas por subpasta (apêndice).
-    Estrutura de saída:
-    {
-        "fotos_nao_conformidades": ["./assets/fotos_nao_conformidades/nc1.jpg", "./assets/fotos_nao_conformidades/nc2.png"],
-        "fotos_informacoes_gerais": ["./assets/fotos_informacoes_gerais/geral1.jpg", "./assets/fotos_informacoes_gerais/geral2.png"]
-    }
-    """
-    result = {}
-    for root, dirs, files in os.walk(path):
-        folder_name = os.path.basename(root)
-        images = [os.path.join(root, f) for f in files if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-        if images:
-            result[folder_name] = images
-    return result
+from utils import set_borders_table, get_images_from_dir, search_paragraph
 
 
 def build_caption_map(df, col_img="Nome da Foto", col_unit="Unidade", col_desc="Não Conformidade"):
@@ -76,7 +58,7 @@ def create_table_images(document, insert_coord, list_of_images_path, captions=No
         subtitle_line = image_line + 1
         column = i % 2
         
-        images_table.cell(image_line, column).paragraphs[0].add_run().add_picture(img_path, width=Inches(4.3))
+        images_table.cell(image_line, column).paragraphs[0].add_run().add_picture(img_path, width=Inches(3.3), height=Inches(2.5))
 
         image_name = os.path.splitext(os.path.basename(img_path))[0]
 
@@ -106,12 +88,11 @@ def divide_images(document, insert_coord, list_of_images_path, captions=None, bl
         insert_coord = create_table_images(document, insert_coord, table_images, captions)
         
         
-def create_all_appendix_images(document, text_nc, text_info):
+def create_all_appendix_images(document, text_nc):
     """
-    Cria as tabelas de imagens para todos os apêndices (NCs e Informações Gerais).
+    Cria as tabelas de imagens para todos os apêndices, NCs sempre e Condições gerais cria caso haja imagens na pasta (fotos_nao_conformidades).
     - document: objeto Word
     - text_nc: posição no doc onde começam as NCs
-    - text_info: posição no doc onde começam as Infos Gerais
     """
 
     images_by_folder = get_images_from_dir()
@@ -121,5 +102,6 @@ def create_all_appendix_images(document, text_nc, text_info):
         captions_nc = build_caption_map(df_nc)
         divide_images(document, text_nc, images_by_folder["fotos_nao_conformidades"], captions=captions_nc, block_size=6)
 
-    if "fotos_informacoes_gerais" in images_by_folder:
-        divide_images(document, text_info, images_by_folder["fotos_informacoes_gerais"], captions=None, block_size=6)
+    if "fotos_condicoes_gerais" in images_by_folder:    
+        text_info = document.paragraphs[search_paragraph(document,"APÊNDICE 2 – CONDIÇÕES GERAIS")[-1]]
+        divide_images(document, text_info, images_by_folder["fotos_condicoes_gerais"], captions=None, block_size=6)
