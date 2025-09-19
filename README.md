@@ -18,7 +18,7 @@ Este projeto realiza a **automação da geração de relatórios técnicos** a p
 
 ## 📊 Requisitos da Planilha
 
-- A aba `Fiscalizações` deve conter a coluna: `Relatório Gerado` (valores booleanos).
+- A aba `Fiscalizações` deve conter a coluna: `Relatório Gerado` ("Concluido" ou "Gerar").
 - A aba `Nao-conformidades` deve conter:
   - `ID da Fiscalização`
   - `Unidade`
