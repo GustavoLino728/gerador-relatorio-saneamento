@@ -1,8 +1,6 @@
-from docx import Document
 from docx.shared import Pt
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from unidecode import unidecode
 from excel import get_non_conformities, get_inspections_data, units_df, documents_excel, town_statistics
 from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table, to_rows_data
 import pandas as pd
@@ -168,7 +166,7 @@ def create_town_units_table(document, text):
     """
 
     report_data = get_inspections_data()
-    town_name = sanitize_value(report_data["Municipio"])
+    report_town = sanitize_value(report_data["Municipio"])
     inspection_type = sanitize_value(report_data["Tipo da Fiscalização"])
 
     units_df.columns = units_df.columns.str.strip()
@@ -176,10 +174,10 @@ def create_town_units_table(document, text):
     units_df["MUNICIPIO_NORMALIZED"] = units_df["Municipio"].apply(sanitize_value)
     units_df["TIPO_NORMALIZED"] = units_df["Tipo"].apply(sanitize_value)
 
-    filtered_units = units_df[units_df["MUNICIPIO_NORMALIZED"] == town_name]
+    filtered_units = units_df[units_df["MUNICIPIO_NORMALIZED"] == report_town]
 
     if "agua" in inspection_type:
-        allowed_types = ["eea", "eta", "rel e rap"]
+        allowed_types = ["eea", "eta", "rel/rap", "rel", "rap"]
     elif "esgoto" in inspection_type:
         allowed_types = ["eee", "ete"]
     else:
@@ -206,7 +204,7 @@ def create_town_units_table(document, text):
     for row in final_df.itertuples(index=False, name=None):
         rows_data.append(list(row))
         
-    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.8, 4, 6, 2], align_left=True)
+    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.8, 4, 6, 2], align_left=False)
 
 
 def create_last_report_table(document, text):
@@ -241,7 +239,9 @@ def create_statistics_table(document, text):
     """
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
-    town_name = report_data["Municipio"].upper()
+    report_town = report_data["Municipio"]
+    report_town = report_town = sanitize_value(report_town)
+    report_town = report_town.upper()
 
     pernambuco_stats = {
         "Quantidade de economias residenciais ativas de água (A) - EAA": "2.261.695",
@@ -254,16 +254,16 @@ def create_statistics_table(document, text):
     }
 
     columns = list(pernambuco_stats.keys())
-    town_stats = df_statistics[df_statistics["ANO BASE: 2023"] == town_name]
+    town_stats = df_statistics[df_statistics["ANO BASE: 2023"] == report_town]
     town_stats = town_stats[columns]
 
-    rows_data = [["INFORMAÇÃO", "PERNAMBUCO", town_name]]
+    rows_data = [["INFORMAÇÃO", "PERNAMBUCO", report_town]]
     for column in columns:
         town_value = ""
         if not town_stats.empty:
             town_value = town_stats.iloc[0][column]
             if isinstance(town_value, (int, float)):
-                town_value = str(int(town_value))
+                town_value = f"{int(town_value):,}".replace(",", ".")
         rows_data.append([column, pernambuco_stats[column], town_value])
 
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[6, 1.5, 1.5], align_left=True, font_size=10)
@@ -278,7 +278,9 @@ def create_quality_index_table(document, text):
     """
     df_statistics = town_statistics.copy()
     report_data = get_inspections_data()
-    report_town = report_data["Municipio"].upper()
+    report_town = report_data["Municipio"]
+    report_town = sanitize_value(report_town)
+    report_town = report_town.upper()
 
     df_statistics.columns = df_statistics.columns.str.replace(r"\s+\(\%\)", "(%)", regex=True)
     df_statistics.columns = df_statistics.columns.str.strip()

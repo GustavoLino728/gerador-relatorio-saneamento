@@ -61,11 +61,12 @@ def get_non_conformities():
     this_report_id = get_this_report()
     this_report_non_conformities = non_conformities[non_conformities["ID da Fiscalização"] == this_report_id].copy()
     this_report_non_conformities["Sigla"] = this_report_non_conformities["Unidade"].str.extract(r'^(.*?)\s*-')
-    return this_report_non_conformities
+    if not this_report_non_conformities.empty:
+        return this_report_non_conformities
+    else:
+        print("❌ Não foram cadastradas Não-Conformidades Referentes ao relátorio que deve ser gerado.")
     
     
-from openpyxl import load_workbook
-
 def mark_report_as_finished():
     """Troca o status da linha de relatorio gerado para Concluido, para finalizar relatorio"""
     this_report_id = get_this_report()

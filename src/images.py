@@ -98,8 +98,8 @@ def create_all_appendix_images(document, text_nc):
     images_by_folder = get_images_from_dir()
 
     if "fotos_nao_conformidades" in images_by_folder:
-        df_nc = get_non_conformities()
-        captions_nc = build_caption_map(df_nc)
+        df_ncs = get_non_conformities()
+        captions_nc = build_caption_map(df_ncs)
         divide_images(document, text_nc, images_by_folder["fotos_nao_conformidades"], captions=captions_nc, block_size=6)
 
     if "fotos_condicoes_gerais" in images_by_folder:    
