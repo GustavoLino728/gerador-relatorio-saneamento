@@ -2,10 +2,9 @@ import pandas as pd
 import os
 from unidecode import unidecode
 from openpyxl import load_workbook
-from paths import DATA_PATH
+from paths import SHEET_PATH
 
 
-SHEET_PATH= os.path.join(DATA_PATH, "Listagem das NC's - Agua e Esgoto.xlsm")
 spreadsheet = pd.ExcelFile(SHEET_PATH)
 
 inspections = pd.read_excel(spreadsheet, sheet_name="Fiscalizações")
@@ -66,6 +65,8 @@ def get_non_conformities():
     else:
         print("❌ Não foram cadastradas Não-Conformidades Referentes ao relátorio que deve ser gerado.")
     
+def get_commercial_data():
+    """Busca as informações relevantes do relatorio de fiscalização de loja de atendimento"""
     
 def mark_report_as_finished():
     """Troca o status da linha de relatorio gerado para Concluido, para finalizar relatorio"""

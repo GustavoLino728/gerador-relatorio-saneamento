@@ -1,8 +1,9 @@
 from docx.shared import Pt
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from excel import get_non_conformities, get_inspections_data, units_df, documents_excel, town_statistics
+from excel import get_non_conformities, get_inspections_data, units_df, town_statistics
 from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table, to_rows_data
+from paths import SHEET_PATH
 import pandas as pd
 
 
@@ -139,6 +140,12 @@ def create_documents_table(document, text):
     Linha 1: cabeçalho (DOCUMENTAÇÃO, SIM, NÃO, OBSERVAÇÕES)
     Linha 2-12: valores correspondentes
     """
+    report_data = get_inspections_data()
+    report_data["Tipo da Fiscalização"] = sanitize_value(report_data["Tipo da Fiscalização"])
+    if report_data["Tipo da Fiscalização"] == "agua":
+        documents_excel = pd.read_excel(SHEET_PATH, sheet_name='Envio de Documentos', header=1)
+    if report_data["Tipo da Fiscalização"] == "esgoto":
+        documents_excel = pd.read_excel(SHEET_PATH, sheet_name='Envio de Documentos', header=15)
     df_documents = documents_excel.copy()
     table = document.add_table(rows=1, cols=len(df_documents.columns))
     set_column_widths(table, 6.5, 0.5, 0.5, 6.5)

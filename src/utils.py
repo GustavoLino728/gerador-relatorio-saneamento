@@ -1,10 +1,12 @@
 import os
+import sys
 from datetime import datetime, date
 from excel import get_inspections_data
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from unidecode import unidecode
 from paths import DATA_PATH, REPORTS_PATH, ASSETS_PATH
 
@@ -25,6 +27,15 @@ def next_filename():
     
     return path
 
+
+def is_file_open(path):
+    try:
+        with open(path, "a+"):
+            return False
+    except PermissionError:
+        os.system("cls")
+        print(f"❌ O arquivo '{path}' está aberto em outro programa. Feche-o e tente novamente.")
+        sys.exit(0) 
 
 def get_images_from_dir(path=ASSETS_PATH):
     """
@@ -272,6 +283,34 @@ def insert_general_condition_section(document, text):
         appendix_run.bold = True         
 
         insert_position._element.addnext(appendix_paragraph._element)
+
+
+def insert_table_7_text(document):
+    """
+    Insere no texto o trecho para cada respectiva tabela. o de agua "Tabela 7 - Parâmetros da qualidade da água.", esgoto: "Tabela 7 - Parâmetros da qualidade do efluente."
+    document: Document
+    """
+
+    report_data = get_inspections_data()
+    report_data["Tipo da Fiscalização"] = sanitize_value(report_data["Tipo da Fiscalização"])
+    insert_text = ""
+    search_text = ""
+    if report_data["Tipo da Fiscalização"] == "agua":
+        insert_text = "Tabela 7 - Parâmetros da qualidade da água."
+        search_text = "Os parâmetros sobre a qualidade da água estão dispostos na Tabela 7 e os seus registros fotográficos estão consolidados no Apêndice 2."
+    if report_data["Tipo da Fiscalização"] == "esgoto":   
+        insert_text = "Tabela 7 - Parâmetros da qualidade do efluente."
+        search_text = "Os parâmetros sobre a qualidade do esgoto estão dispostos na Tabela 7."
+        
+    insert_position = document.paragraphs[search_paragraph(document, search_text)[0]]
+    appendix_paragraph = document.add_paragraph()
+    appendix_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    appendix_run = appendix_paragraph.add_run(insert_text)
+    appendix_run.font.size = Pt(10) 
+    appendix_run.bold = True         
+
+    insert_position._element.addnext(appendix_paragraph._element)
+
 
 def decide_report_type():
     report_data = get_inspections_data()
