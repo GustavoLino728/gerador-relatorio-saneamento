@@ -14,10 +14,6 @@ documents_excel = pd.read_excel(spreadsheet, sheet_name="Envio de Documentos")
 town_statistics = pd.read_excel(spreadsheet, sheet_name="Estatisticas ")
 units_df = pd.read_excel(spreadsheet, sheet_name="Cadastrar Unidades", header=3)
 
-ete_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs ETE")
-eee_sewage_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs EEE")
-eta_water_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs ETA")
-eea_water_nonconformities = pd.read_excel(spreadsheet, sheet_name="NCs REL e RAP")
 
 def get_this_report():
     """Retorna o id referente a fiscalização atual baseado em qual linha estiver escrito [Gerar]"""

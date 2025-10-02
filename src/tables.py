@@ -184,7 +184,7 @@ def create_town_units_table(document, text):
     filtered_units = units_df[units_df["MUNICIPIO_NORMALIZED"] == report_town]
 
     if "agua" in inspection_type:
-        allowed_types = ["eea", "eta", "rel/rap", "rel", "rap"]
+        allowed_types = ["eea", "eeab", "eeat", "eta", "rel/rap", "rel", "rap", "poço", "poco"]
     elif "esgoto" in inspection_type:
         allowed_types = ["eee", "ete"]
     else:
