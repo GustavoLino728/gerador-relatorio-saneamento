@@ -2,7 +2,7 @@ from docx.shared import Pt
 from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from excel import get_non_conformities, get_inspections_data, units_df, town_statistics
-from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table, to_rows_data
+from utils import search_paragraph, apply_background_color, set_column_widths, format_dict_values, set_table_margins, sanitize_value, set_borders_table, to_rows_data, insert_table_7_text
 from paths import SHEET_PATH
 import pandas as pd
 
@@ -143,7 +143,7 @@ def create_documents_table(document, text):
     report_data = get_inspections_data()
     report_data["Tipo da Fiscalização"] = sanitize_value(report_data["Tipo da Fiscalização"])
     if report_data["Tipo da Fiscalização"] == "agua":
-        documents_excel = pd.read_excel(SHEET_PATH, sheet_name='Envio de Documentos', header=1)
+        documents_excel = pd.read_excel(SHEET_PATH, sheet_name='Envio de Documentos', header=1, nrows=11)
     if report_data["Tipo da Fiscalização"] == "esgoto":
         documents_excel = pd.read_excel(SHEET_PATH, sheet_name='Envio de Documentos', header=15)
     df_documents = documents_excel.copy()
@@ -360,6 +360,7 @@ def create_water_params_table(document, text):
         ]
         rows_data.append(row_list)
 
+    insert_table_7_text(document)
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 1.5, 1.5, 3], align_left=False)
     
 def create_sewage_params_table(document, text):
@@ -386,6 +387,7 @@ def create_sewage_params_table(document, text):
         ]
         rows_data.append(row_list)
 
+    insert_table_7_text(document)
     create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 2, 3], align_left=False)
 
 def create_table_7(document):

@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from unidecode import unidecode
 from openpyxl import load_workbook
+from num2words import num2words
 from paths import SHEET_PATH
 
 
@@ -32,12 +33,19 @@ def get_this_report():
 def get_inspections_data():
     """Retorna os dados da fiscalização atual"""
     this_report = get_this_report()
+    this_report_non_conformities = get_non_conformities()
+    total_ncs = len(this_report_non_conformities.index)
+    
     if this_report is None:
         return None
     if this_report >= len(inspections):
         print("❌ As informações da fiscalização não foram encontradas, verifique a aba (Fiscalizações) na planilha e verifique o (ID da fiscalização) e se Relátorio Gerado contém um (Gerar)")
         return None
     data = inspections.iloc[this_report].to_dict()
+    
+    data["Total NCS UF (palavra)"] = num2words(data["Total NCS UF"], lang='pt')
+    data["Total NCS Atual"] = total_ncs
+    data["Total NCS Atual (palavra)"] = num2words(data["Total NCS Atual"], lang='pt')
     
     if "Tipo da Fiscalização" in data:
         report_type = str(data["Tipo da Fiscalização"]).strip().lower()
