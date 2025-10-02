@@ -1,12 +1,18 @@
 \venv
 *.env
 __pycache__/
-# /data/
-# /reports/
-# /assets/
 build/
 dist/
 src/gerador-relatorio-saneamento.rar
 icone_exe.ico
 main.exe
 main.spec
+/src/reports/*.docx
+
+/src/assets/fotos_nao_conformidades/*.jpg
+/src/assets/fotos_nao_conformidades/*.jpeg
+/src/assets/fotos_nao_conformidades/*.png
+
+/src/assets/fotos_condicoes_gerais/*.jpg
+/src/assets/fotos_condicoes_gerais/*.jpeg
+/src/assets/fotos_condicoes_gerais/*.png
