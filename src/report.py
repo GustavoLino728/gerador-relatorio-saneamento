@@ -1,6 +1,6 @@
 from common.images import create_all_appendix_images
 from common.utils import substitute_placeholders, next_filename, search_paragraph, decide_report_type, insert_general_condition_section, is_file_open
-# from common.excel import mark_report_as_finished, get_commercial_data
+from common.excel import mark_report_as_finished
 from common.tables import create_non_conformities_table, create_town_units_table, create_documents_table, create_general_information_table, create_abbreviations_table, create_last_report_table
 from operational.tables import create_statistics_table, create_quality_index_table, create_table_7
 from commercial.tables import create_quantity_service_table, create_late_service_reason_table
@@ -33,7 +33,7 @@ def generate_operational_report():
         ("Inserir imagens", lambda: create_all_appendix_images(document, document.paragraphs[search_paragraph(document,"APÊNDICE 1 - NÃO CONFORMIDADES")[-1]])),
         ("Substituir placeholders", lambda: substitute_placeholders(document)),
         ("Salvar documento", lambda: document.save(next_filename())),
-        # ("Marcando Como Finalizado", lambda: mark_report_as_finished()),
+        ("Marcando Como Finalizado", lambda: mark_report_as_finished()),
     ]
 
     for desc, func in tqdm(steps, desc="Gerando relatório", unit="etapa"):
@@ -62,7 +62,7 @@ def generate_commercial_report():
         ("Substituir placeholders", lambda: substitute_placeholders(document)),
         ("Substituir placeholders (Especificos de Comercial)", lambda: substitute_placeholders(document, excel_data=analysis_result)),
         ("Salvar documento", lambda: document.save(next_filename())),
-        # ("Marcando Como Finalizado", lambda: mark_report_as_finished())
+        ("Marcando Como Finalizado", lambda: mark_report_as_finished())
     ]
 
     for desc, func in tqdm(steps, desc="Gerando relatório", unit="etapa"):

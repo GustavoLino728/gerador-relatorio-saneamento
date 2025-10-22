@@ -13,7 +13,6 @@ non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades", he
 documents_excel = pd.read_excel(spreadsheet, sheet_name="Envio de Documentos")
 town_statistics = pd.read_excel(spreadsheet, sheet_name="Estatisticas ")
 units_df = pd.read_excel(spreadsheet, sheet_name="Cadastrar Unidades", header=3)
-commercial = pd.read_excel(spreadsheet, sheet_name="Comercial (Manual)", header=1)
 
 
 def get_this_report():
@@ -22,23 +21,27 @@ def get_this_report():
         inspections["Relatório Gerado"].str.lower() == "gerar"
     ]
     if not not_done_reports.empty:
-        return not_done_reports.index[0]
+        return int(not_done_reports["ID da Fiscalização"].iloc[0])
     else:
         print("❌ Todos os relatórios já foram gerados.")
 
 
 def get_inspections_data():
     """Retorna os dados da fiscalização atual"""
-    this_report = get_this_report()
     this_report_non_conformities = get_non_conformities()
     total_ncs = len(this_report_non_conformities.index)
     
+    this_report = get_this_report()
     if this_report is None:
         return None
-    if this_report >= len(inspections):
-        print("❌ As informações da fiscalização não foram encontradas, verifique a aba (Fiscalizações) na planilha e verifique o (ID da fiscalização) e se Relátorio Gerado contém um (Gerar)")
+
+    data_row = inspections[inspections["ID da Fiscalização"] == this_report]
+
+    if data_row.empty:
+        print("❌ Fiscalização não encontrada.")
         return None
-    data = inspections.iloc[this_report].to_dict()
+
+    data = data_row.iloc[0].to_dict()
     
     data["Total NCS UF (palavra)"] = num2words(data["Total NCS UF"], lang='pt')
     data["Total NCS Atual"] = total_ncs
@@ -66,20 +69,6 @@ def get_non_conformities():
         return this_report_non_conformities
     else:
         print("❌ Não foram cadastradas Não-Conformidades Referentes ao relátorio que deve ser gerado.")
-    
-# def get_commercial_data():
-#     this_report_id = get_this_report()
-#     commercial_report_data = commercial[commercial["ID da Fiscalização"] == this_report_id].copy()
-    
-#     on_point_services = int(commercial_report_data["Atendimentos Fora do Prazo"].iloc[0]) - int(commercial_report_data["Atendimentos Totais"].iloc[0])
-#     on_point_services = abs(on_point_services)
-    
-#     percentLate = (int(commercial_report_data["Atendimentos Fora do Prazo"].iloc[0]) / int(commercial_report_data["Atendimentos Totais"].iloc[0])) * 100
-
-#     commercial_report_data["Atendimentos no Prazo"] = on_point_services
-#     commercial_report_data["% Atendimentos Fora do Prazo"] = percentLate
-
-#     return {col: commercial_report_data[col].iloc[0] for col in commercial_report_data.columns}
 
 
 def mark_report_as_finished():
