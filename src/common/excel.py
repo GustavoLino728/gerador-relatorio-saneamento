@@ -3,7 +3,7 @@ import os
 from unidecode import unidecode
 from openpyxl import load_workbook
 from num2words import num2words
-from paths import SHEET_PATH
+from common.paths import SHEET_PATH
 
 
 spreadsheet = pd.ExcelFile(SHEET_PATH)
@@ -13,6 +13,7 @@ non_conformities = pd.read_excel(spreadsheet, sheet_name="Nao-conformidades", he
 documents_excel = pd.read_excel(spreadsheet, sheet_name="Envio de Documentos")
 town_statistics = pd.read_excel(spreadsheet, sheet_name="Estatisticas ")
 units_df = pd.read_excel(spreadsheet, sheet_name="Cadastrar Unidades", header=3)
+commercial = pd.read_excel(spreadsheet, sheet_name="Comercial (Manual)", header=1)
 
 
 def get_this_report():
@@ -53,9 +54,6 @@ def get_inspections_data():
         data["SAA ou SEE"] = "SAA"
     elif data["Tipo da Fiscalização"] == "esgoto":
         data["SAA ou SEE"] = "SEE"
-    else:
-        print("❌ Tipo de Fiscalização não válido, insira um válido: Agua ou Esgoto")
-        return None
     return data
 
 
@@ -69,9 +67,21 @@ def get_non_conformities():
     else:
         print("❌ Não foram cadastradas Não-Conformidades Referentes ao relátorio que deve ser gerado.")
     
-def get_commercial_data():
-    """Busca as informações relevantes do relatorio de fiscalização de loja de atendimento"""
+# def get_commercial_data():
+#     this_report_id = get_this_report()
+#     commercial_report_data = commercial[commercial["ID da Fiscalização"] == this_report_id].copy()
     
+#     on_point_services = int(commercial_report_data["Atendimentos Fora do Prazo"].iloc[0]) - int(commercial_report_data["Atendimentos Totais"].iloc[0])
+#     on_point_services = abs(on_point_services)
+    
+#     percentLate = (int(commercial_report_data["Atendimentos Fora do Prazo"].iloc[0]) / int(commercial_report_data["Atendimentos Totais"].iloc[0])) * 100
+
+#     commercial_report_data["Atendimentos no Prazo"] = on_point_services
+#     commercial_report_data["% Atendimentos Fora do Prazo"] = percentLate
+
+#     return {col: commercial_report_data[col].iloc[0] for col in commercial_report_data.columns}
+
+
 def mark_report_as_finished():
     """Troca o status da linha de relatorio gerado para Concluido, para finalizar relatorio"""
     this_report_id = get_this_report()

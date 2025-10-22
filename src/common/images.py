@@ -4,9 +4,9 @@ import sys
 from PIL import Image, ImageOps
 from docx.image.exceptions import UnrecognizedImageError
 from docx.shared import Inches, Pt
-from excel import get_non_conformities 
-from utils import set_borders_table, get_images_from_dir, search_paragraph, sanitize_value
-from paths import ASSETS_PATH, BASE_PATH
+from common.excel import get_non_conformities 
+from common.utils import set_borders_table, get_images_from_dir, search_paragraph, sanitize_value
+from common.paths import ASSETS_PATH, BASE_PATH
 
 
 # Funções Utilitárias
@@ -48,18 +48,15 @@ def convert_to_valid_jpeg(image_path, target_size_kb=(20, 50), max_dimension=800
                     size_kb = get_file_size_kb(new_path)
 
                     if target_size_kb[0] <= size_kb <= target_size_kb[1]:
-                        # print(f"✅ {os.path.basename(new_path)} otimizada para {size_kb:.1f}KB (q={quality})")
                         return new_path
 
                     if size_kb > target_size_kb[1]:
                         quality -= step
                     else:
-                        print(f"⚠️ {os.path.basename(new_path)} muito pequeno: {size_kb:.1f}KB (q={quality})")
                         return new_path
 
                 img.save(new_path, 'JPEG', quality=min_quality, optimize=True)
                 size_kb = get_file_size_kb(new_path)
-                # print(f"❌ {os.path.basename(new_path)} salvo com qualidade mínima ({min_quality}), {size_kb:.1f}KB")
                 return new_path
 
         except Exception as e:
@@ -102,9 +99,6 @@ def process_images(path=ASSETS_PATH):
                 total += 1
                 if convert_to_valid_jpeg(image_path):
                     success += 1
-
-    # print(f"Processamento finalizado: {success}/{total} imagens otimizadas.")
-
 
 def validate_image(img_path):
     """

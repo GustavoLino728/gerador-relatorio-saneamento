@@ -1,4 +1,7 @@
-1 - Abrir a planilha 'Listagem das NC's - Agua e Esgoto'
+Instruções passoa a passo para uso da automação!
+
+Relatórios de fiscalização (Operacionais - Agua e Esgoto) 
+1 - Abrir a planilha 'Cadastro das Fiscalizações'
 2 - Cadastrar as informações na Aba "Fiscalizações"
 3 - Selecione "Gerar" na Coluna "Relatório Gerado"
 4 - Preencha a aba "Envio de Documentos"
@@ -12,5 +15,25 @@
 10 - Na inserção de NCs, Atente-se a colocar o mesmo id da fiscalização que você cadastrou na aba "Fiscalizações". As celulas (B3, C3, D3) servem como barra de pesquisa para 
      as suas respectivas barras suspensas abaixo delas (B4, C4, D4)
 11 - Salvar o arquivo e fechar
-12 - Rodar o comando (Executavel)
+12 - Rodar o Executavel (Gerador de Relatórios (Saneamento))
 13 - Pegue seu relatório pronto na pasta "reports" e estará lá com o nome "RELATÓRIO (ID REFERENTE A SUA FISCALIZAÇÃO)"
+
+Relatórios de fiscalização (Comercial - Loja de Atendimento) 
+1 - Abrir a planilha 'Cadastro das Fiscalizações'
+2 - Cadastrar as informações na Aba "Fiscalizações"
+3 - Selecione "Gerar" na Coluna "Relatório Gerado"
+4 - Verifique se na aba "Cadastrar Unidades" já estão cadastradas as unidades do municipio que você fiscalizou.
+5 - Renomear as fotos das não conformidades - Utilize o padrão "Foto 01, Foto 02, Foto 03..." - Site que pode lhe ajudar: (https://pt.imgtools.co/rename-image)
+6 - Dentro da pasta 'assets', você irá adicionar as imagens que entrarão nos apendices do relátorio. 
+    Insira na pasta "fotos_nao_conformidades" as fotos das não conformidades (Apendice 1), e insira na pasta "fotos_condicoes_gerais" as fotos desse apendice. 
+    Só o de não conformidades é obrigatorio. Caso você não insira nada na pasta de condições gerais ele só não irá incluir esse apendice.
+7 - Cadastrar as não conformidades na Aba "Não conformidades", respeitando a ordem de acordo com as fotos. Ou vice-versa caso você renomeie manualmente
+8 - Na inserção de NCs, Atente-se a colocar o mesmo id da fiscalização que você cadastrou na aba "Fiscalizações". As celulas (B3, C3, D3) servem como barra de pesquisa para 
+     as suas respectivas barras suspensas abaixo delas (B4, C4, D4)
+9 - Salvar o arquivo e fechar
+10 - Rodar o Executavel (Gerador de Relatórios (Saneamento))
+11 - Pegue seu relatório pronto na pasta "reports" e estará lá com o nome "RELATÓRIO (ID REFERENTE A SUA FISCALIZAÇÃO)"
+
+Ressalvas Gerais:
+- Caso queira colocar mais de uma foto por não conformidade, adicione no campo de "Nome da Foto" no padrão "Foto 01, Foto 02, Foto 03"...
+- Caso a Não conformidade não vá ter uma imagem basta apagar o campo do Nome da Foto ou colocar "Sem Foto"

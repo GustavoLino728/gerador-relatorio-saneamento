@@ -46,7 +46,7 @@ pip install -r requirements.txt
 
 3. **Prepare os dados**:
 - Coloque as imagens das não conformidades na pasta assets/.
-- Certifique-se de que sua planilha atualizada (Listagem das NC's.xlsx) e o modelo (RELATÓRIO MODELO.docx) estejam na pasta data/.
+- Certifique-se de que sua planilha atualizada (Cadastro das Fiscalizações.xlsm) e o modelo (RELATÓRIO MODELO.docx) estejam na pasta data/.
 
 4. **Execute o script principal**:
 

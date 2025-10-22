@@ -1,14 +1,14 @@
 import os
 import sys
 from datetime import datetime, date
-from excel import get_inspections_data
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from unidecode import unidecode
-from paths import DATA_PATH, REPORTS_PATH, ASSETS_PATH
+from common.excel import get_inspections_data
+from common.paths import DATA_PATH, REPORTS_PATH, ASSETS_PATH
 
 
 def next_filename():
@@ -124,13 +124,12 @@ def set_margin(tag, value, tcMar):
 
 # ---------------------------------------------------------------
 
-def substitute_placeholders(document):
+def substitute_placeholders(document, excel_data=get_inspections_data()):
     """
     Define um padrão de Strings no documento ({{x}}), e substitui no documento e nas tabelas, de acordo com o dicionário retornado com os dados da fiscalização.
     Caso houver chaves iguais as Strings realiza a troca. Ex: ({{nome}}) no documento, ele percorre o dicionario e caso aja a chave nome ele troca ({{nome}})
     pelo valor correspondente a chave nome.
     """
-    excel_data = get_inspections_data()
 
     replacements = {f"{{{{{k}}}}}": format_value(v) for k, v in excel_data.items()}
 
