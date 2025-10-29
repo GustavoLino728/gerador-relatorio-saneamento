@@ -1,5 +1,6 @@
 from common.tables import create_generic_table
 from common.paths import SHEET_PATH
+from common.utils import insert_text_after_position
 import pandas as pd
 
 spreadsheet = pd.ExcelFile(SHEET_PATH)
@@ -11,7 +12,7 @@ def create_quantity_service_table(document, analysis_result, text="Tabela 2 - Qu
                     ["Fora do Prazo", analysis_result["Quantidade fora do prazo"], analysis_result["% fora do prazo"]],
                     ["Total", analysis_result["Quantidade total de atendimentos"], "100,0%"]]
     
-    create_generic_table(document, rows_data=table_2_info, text_after_paragraph=text, col_widths=[4, 2, 2])
+    create_generic_table(document, rows_data=table_2_info, position_to_insert=text, col_widths=[4, 2, 2])
 
 
 def create_late_service_reason_table(document, analysis_result, text="Tabela 3 - Motivo do encerramento"):
@@ -23,6 +24,11 @@ def create_late_service_reason_table(document, analysis_result, text="Tabela 3 -
     others = sorted_reasons[5:]
     others_sum = sum(v for _, v in others)
 
+    if others:
+        for motivo, count in others:
+            insert_text_after_position(document, position_to_insert=text, text_to_insert=f"- {motivo}: {count}")
+        insert_text_after_position(document, position_to_insert=text, text_to_insert="Detalhamento dos motivos incluídos em 'OUTROS':")
+    
     if others_sum > 0:
         top_5["OUTROS"] = others_sum
 
@@ -30,9 +36,4 @@ def create_late_service_reason_table(document, analysis_result, text="Tabela 3 -
     for motivo, count in top_5.items():
         table_data.append([motivo, int(count)])
 
-    create_generic_table(document, rows_data=table_data, text_after_paragraph=text, col_widths=[4, 2])
-    
-    if others:
-        document.add_paragraph("Detalhamento dos motivos incluídos em 'OUTROS':")
-        for motivo, count in others:
-            document.add_paragraph(f"- {motivo}: {count}")
+    create_generic_table(document, rows_data=table_data, position_to_insert=text, col_widths=[4, 2])

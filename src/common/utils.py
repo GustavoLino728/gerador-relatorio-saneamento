@@ -240,12 +240,49 @@ def to_rows_data(data, subtitle=None):
     
     return rows
 
+def insert_text_after_position(document, position_to_insert, text_to_insert, font_size=10, bold=False, alignment=WD_ALIGN_PARAGRAPH.CENTER, occurrence_index=0):
+    """
+    Insere um parágrafo com texto formatado após uma posição específica no documento.
 
-def insert_blank_lines(document, position_paragraph, n_lines=1):
+    document: Objeto Document do python-docx
+    position_to_insert: String com o texto de referência para buscar no documento
+    text_to_insert: String com o texto a ser inserido
+    font_size: Tamanho da fonte em pontos (padrão: 10)
+    bold: Se o texto deve ser negrito (padrão: False)
+    alignment: Alinhamento do parágrafo (padrão: WD_ALIGN_PARAGRAPH.CENTER)
+    occurrence_index: Índice da ocorrência a usar caso haja múltiplas (padrão: 0 = primeira ocorrência)
+    """
+
+    index = search_paragraph(document, position_to_insert)
+    
+    if not index:
+        print(f"⚠️ Texto '{position_to_insert}' não encontrado no documento.")
+        return None
+    
+    if occurrence_index >= len(index):
+        occurrence_index = 0
+    
+    paragraph_index = index[occurrence_index]
+    reference_paragraph = document.paragraphs[paragraph_index]
+    
+    new_paragraph = document.add_paragraph()
+    
+    if alignment:
+        new_paragraph.alignment = alignment
+    
+    run = new_paragraph.add_run(text_to_insert)
+    run.font.size = Pt(font_size)
+    run.bold = bold
+
+    reference_paragraph._element.addnext(new_paragraph._element)
+    
+    return new_paragraph
+
+def insert_blank_lines(document, position_to_insert, n_lines=1):
     """
     Insere n linhas em branco após o parágrafo informado.
     """
-    last_elem = position_paragraph
+    last_elem = position_to_insert
     for _ in range(n_lines):
         blank_paragraph = document.add_paragraph()
         blank_paragraph.add_run()
@@ -256,32 +293,25 @@ def insert_blank_lines(document, position_paragraph, n_lines=1):
 
 def insert_general_condition_section(document, text):
     """
-    Insere tanto no sumário quanto o apêndice de fotos caso a pasta de informações gerais contenha alguma imagem
-    document: Document
-    text_summary: Texto para ter como refêrencia onde irá inserir as informações no sumário
-    text_appendix: Texto para ter como refêrencia onde irá inserir as informações no apêndice
+    Insere tanto no sumário quanto o apêndice de fotos caso a pasta de condições gerais contenha alguma imagem
     """
-    images_by_folder = get_images_from_dir()
+    from common.images import get_assets_for_current_report
     
-    if "fotos_condicoes_gerais" in images_by_folder and images_by_folder["fotos_condicoes_gerais"]:
-        pos_summary_idx, pos_appendix_idx = search_paragraph(document, text)
-        position_summary = document.paragraphs[pos_summary_idx]
-        position_appendix = document.paragraphs[pos_appendix_idx]
+    assets_paths = get_assets_for_current_report()
+    
+    if assets_paths["fotos_condicoes_gerais"]:
+        images_cond_dict = get_images_from_dir(assets_paths["fotos_condicoes_gerais"])
+        
+        has_images = any(images_cond_dict.values())
+        
+        if has_images:
+            pos_summary_idx, pos_appendix_idx = search_paragraph(document, text)
+            position_summary = document.paragraphs[pos_summary_idx]
+            position_appendix = document.paragraphs[pos_appendix_idx]
 
-        summary_paragraph = document.add_paragraph()
-        summary_run = summary_paragraph.add_run("APÊNDICE 2 – CONDIÇÕES GERAIS")
-        summary_run.font.size = Pt(10)    
-
-        position_summary._element.addnext(summary_paragraph._element)
-
-        insert_position = insert_blank_lines(document, position_appendix, n_lines=3)
-
-        appendix_paragraph = document.add_paragraph()
-        appendix_run = appendix_paragraph.add_run("APÊNDICE 2 – CONDIÇÕES GERAIS")
-        appendix_run.font.size = Pt(10) 
-        appendix_run.bold = True         
-
-        insert_position._element.addnext(appendix_paragraph._element)
+            insert_text_after_position(document, position_summary, text_to_insert="APÊNDICE 2 – CONDIÇÕES GERAIS")
+            insert_position = insert_blank_lines(document, position_appendix, n_lines=3)
+            insert_text_after_position(document, insert_position, text_to_insert="APÊNDICE 2 – CONDIÇÕES GERAIS", bold=True)
 
 
 def insert_table_7_text(document):
@@ -302,13 +332,8 @@ def insert_table_7_text(document):
         search_text = "Os parâmetros sobre a qualidade do esgoto estão dispostos na Tabela 7."
         
     insert_position = document.paragraphs[search_paragraph(document, search_text)[0]]
-    appendix_paragraph = document.add_paragraph()
-    appendix_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    appendix_run = appendix_paragraph.add_run(insert_text)
-    appendix_run.font.size = Pt(10) 
-    appendix_run.bold = True         
+    insert_text_after_position(document, insert_position, text_to_insert=insert_text, bold=True, alignment=WD_ALIGN_PARAGRAPH.CENTER)
 
-    insert_position._element.addnext(appendix_paragraph._element)
 
 
 def decide_report_type():

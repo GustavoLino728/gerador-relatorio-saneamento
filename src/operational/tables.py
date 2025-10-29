@@ -40,7 +40,7 @@ def create_statistics_table(document, text):
                 town_value = f"{int(town_value):,}".replace(",", ".")
         rows_data.append([column, pernambuco_stats[column], town_value])
 
-    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[6, 1.5, 1.5], align_left=True, font_size=10)
+    create_generic_table(document=document, rows_data=rows_data, position_to_insert=text, col_widths=[6, 1.5, 1.5], align_left=True, font_size=10)
 
 
 def create_quality_index_table(document, text):
@@ -103,7 +103,7 @@ def create_water_params_table(document, text):
         rows_data.append(row_list)
 
     insert_table_7_text(document)
-    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 1.5, 1.5, 3], align_left=False)
+    create_generic_table(document=document, rows_data=rows_data, position_to_insert=text, col_widths=[5, 1.5, 1.5, 3], align_left=False)
     
 def create_sewage_params_table(document, text):
     """
@@ -130,7 +130,7 @@ def create_sewage_params_table(document, text):
         rows_data.append(row_list)
 
     insert_table_7_text(document)
-    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[5, 2, 3], align_left=False)
+    create_generic_table(document=document, rows_data=rows_data, position_to_insert=text, col_widths=[5, 2, 3], align_left=False)
 
 def create_table_7(document):
     """Decide qual das tabelas 7 deve ser gerada com base no tipo da fiscalização"""

@@ -7,7 +7,7 @@ from common.utils import search_paragraph, apply_background_color, set_column_wi
 from common.paths import SHEET_PATH
 
 
-def create_generic_table(document, rows_data, text_after_paragraph, col_widths=None,
+def create_generic_table(document, rows_data, position_to_insert, col_widths=None,
                          cell_padding=0.1, align_left=False, font_size=10):
     """
     Cria uma tabela genérica a partir de rows_data (lista de listas).
@@ -18,7 +18,7 @@ def create_generic_table(document, rows_data, text_after_paragraph, col_widths=N
         - Se uma linha tiver menos valores que o número de colunas ou apenas 1 valor:
           será tratada como subtítulo (mescla todas as colunas)
           
-    text_after_paragraph: posição para inserir a tabela
+    position_to_insert: posição para inserir a tabela
     col_widths: lista de larguras para cada coluna (ex: [2, 6, 3])
     cell_padding: preenchimento interno das células
     align_left: se True, alinha conteúdo à esquerda
@@ -65,7 +65,7 @@ def create_generic_table(document, rows_data, text_after_paragraph, col_widths=N
     if col_widths:
         set_column_widths(table, *col_widths)
 
-    paragraph_index = search_paragraph(document, text_after_paragraph)[0]
+    paragraph_index = search_paragraph(document, position_to_insert)[0]
     document.paragraphs[paragraph_index]._element.addnext(table._element)
 
 
@@ -130,7 +130,7 @@ def create_general_information_table(document, text):
         ["Tipo de Fiscalização:", "Direta e periódica."]
     ]
     
-    create_generic_table(document, rows_data=general_info, text_after_paragraph=text, col_widths=[1, 9], align_left=True)
+    create_generic_table(document, rows_data=general_info, position_to_insert=text, col_widths=[1, 9], align_left=True)
 
 
 def create_documents_table(document, text):
@@ -212,7 +212,7 @@ def create_town_units_table(document, text):
     for row in final_df.itertuples(index=False, name=None):
         rows_data.append(list(row))
         
-    create_generic_table(document=document, rows_data=rows_data, text_after_paragraph=text, col_widths=[0.8, 4, 6, 2], align_left=False)
+    create_generic_table(document=document, rows_data=rows_data, position_to_insert=text, col_widths=[0.8, 4, 6, 2], align_left=False)
 
 
 def create_last_report_table(document, text):

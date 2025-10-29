@@ -1,10 +1,9 @@
 import os
 import re
-import sys
 from PIL import Image, ImageOps
 from docx.image.exceptions import UnrecognizedImageError
 from docx.shared import Inches, Pt
-from common.excel import get_non_conformities 
+from common.excel import get_non_conformities, get_this_report
 from common.utils import set_borders_table, get_images_from_dir, search_paragraph, sanitize_value
 from common.paths import ASSETS_PATH, BASE_PATH
 
@@ -16,54 +15,52 @@ def get_file_size_kb(file_path):
     """
     return os.path.getsize(file_path) / 1024
 
+
 def convert_to_valid_jpeg(image_path, target_size_kb=(20, 50), max_dimension=800):
-        try:
-            with Image.open(image_path) as img:
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    background = Image.new('RGB', img.size, (255, 255, 255))
-                    if img.mode == 'P':
-                        img = img.convert('RGBA')
-                    background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-                    img = background
-                elif img.mode != 'RGB':
-                    img = img.convert('RGB')
+    try:
+        with Image.open(image_path) as img:
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
 
-                img = ImageOps.exif_transpose(img)
+            img = ImageOps.exif_transpose(img)
 
-                if max(img.size) > max_dimension:
-                    img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+            if max(img.size) > max_dimension:
+                img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
 
-                base_name = os.path.splitext(image_path)[0]
-                new_path = f"{base_name}.jpg"
+            base_name = os.path.splitext(image_path)[0]
+            new_path = f"{base_name}.jpg"
 
-                if image_path != new_path and os.path.exists(image_path):
-                    os.remove(image_path)
+            if image_path != new_path and os.path.exists(image_path):
+                os.remove(image_path)
 
-                quality = 85
-                min_quality = 30
-                step = 5
+            quality = 85
+            min_quality = 30
+            step = 5
 
-                while quality >= min_quality:
-                    img.save(new_path, 'JPEG', quality=quality, optimize=True)
-                    size_kb = get_file_size_kb(new_path)
-
-                    if target_size_kb[0] <= size_kb <= target_size_kb[1]:
-                        return new_path
-
-                    if size_kb > target_size_kb[1]:
-                        quality -= step
-                    else:
-                        return new_path
-
-                img.save(new_path, 'JPEG', quality=min_quality, optimize=True)
+            while quality >= min_quality:
+                img.save(new_path, 'JPEG', quality=quality, optimize=True)
                 size_kb = get_file_size_kb(new_path)
-                return new_path
 
-        except Exception as e:
-            print(f"❌ Erro ao processar {image_path}: {e}")
-            return None
+                if target_size_kb[0] <= size_kb <= target_size_kb[1]:
+                    return new_path
 
-#----------------------------------
+                if size_kb > target_size_kb[1]:
+                    quality -= step
+                else:
+                    return new_path
+
+            img.save(new_path, 'JPEG', quality=min_quality, optimize=True)
+            return new_path
+
+    except Exception as e:
+        print(f"❌ Erro ao processar {image_path}: {e}")
+        return None
 
 
 def build_caption_map(df, col_img="Nome da Foto", col_unit="Unidade", col_desc="Não Conformidade"):
@@ -85,11 +82,13 @@ def build_caption_map(df, col_img="Nome da Foto", col_unit="Unidade", col_desc="
     return captions
 
 
-def process_images(path=ASSETS_PATH):
+def process_images(path):
     """
     Processa imagens para JPEGs com qualidade iterativa visando tamanho entre target_size_kb
     """
-
+    if not path or not os.path.exists(path):
+        return
+    
     total = 0
     success = 0
     for root, dirs, files in os.walk(path):
@@ -99,6 +98,7 @@ def process_images(path=ASSETS_PATH):
                 total += 1
                 if convert_to_valid_jpeg(image_path):
                     success += 1
+
 
 def validate_image(img_path):
     """
@@ -116,6 +116,61 @@ def validate_image(img_path):
         return False, str(e)
 
 
+def get_images_path_by_foldername(parent_folder):
+    """
+    Recebe a pasta pai (ex: fotos_nao_conformidades)
+    e retorna o caminho da subpasta cujo prefixo corresponde ao ID da fiscalização atual.
+    """
+    this_report_id = get_this_report()
+    if this_report_id is None:
+        return None
+
+    this_report_id_str = str(int(this_report_id))
+
+    if not os.path.isdir(parent_folder):
+        return None
+
+    for folder_name in os.listdir(parent_folder):
+        match = re.match(r'ID\s*(\d+)\s*-', folder_name, re.IGNORECASE)
+        if match:
+            folder_id = match.group(1)
+            if folder_id == this_report_id_str:
+                folder_path = os.path.join(parent_folder, folder_name)
+                if os.path.isdir(folder_path):
+                    return folder_path
+    return None
+
+
+def get_assets_for_current_report():
+    """
+    Retorna um dict conforme o padrão atual:
+    {
+        "fotos_nao_conformidades": <path para subpasta da fiscalização>,
+        "fotos_condicoes_gerais": <path para subpasta da fiscalização> ou None
+    }
+    """
+    paths = {}
+    this_report_id = get_this_report()
+    
+    nao_conf_path = os.path.join(ASSETS_PATH, "fotos_nao_conformidades")
+    cond_gerais_path = os.path.join(ASSETS_PATH, "fotos_condicoes_gerais")
+
+    nc_folder = get_images_path_by_foldername(nao_conf_path)
+    if nc_folder:
+        paths["fotos_nao_conformidades"] = nc_folder
+    else:
+        print(f"❌ Pasta obrigatória 'ID {this_report_id} - ...' não encontrada em 'fotos_nao_conformidades'. Crie a pasta com o ID correto.")
+        paths["fotos_nao_conformidades"] = None
+
+    cond_folder = get_images_path_by_foldername(cond_gerais_path)
+    if cond_folder:
+        paths["fotos_condicoes_gerais"] = cond_folder
+    else:
+        paths["fotos_condicoes_gerais"] = None
+
+    return paths
+
+
 def create_table_images(document, insert_coord, list_of_images_path, captions=None, title_text="Registros Fotográficos"):
     """
     Cria tabela de imagens com legenda.
@@ -123,11 +178,9 @@ def create_table_images(document, insert_coord, list_of_images_path, captions=No
     valid_images = []
 
     for img_path in list_of_images_path:
-
-        abs_img_path = os.path.join(BASE_PATH, img_path)
-        is_valid, error_msg = validate_image(abs_img_path)
+        is_valid, error_msg = validate_image(img_path)
         if is_valid:
-            valid_images.append(abs_img_path)
+            valid_images.append(img_path)
         else:
             print(f"⚠️ Imagem inválida ignorada: {os.path.basename(img_path)} - {error_msg}")
 
@@ -201,15 +254,33 @@ def create_all_appendix_images(document, text_nc):
     """
     Cria todas tabelas de imagens para os apêndices, processando as imagens primeiro
     """
-    process_images(ASSETS_PATH)
+    assets_paths = get_assets_for_current_report()
 
-    images_by_folder = get_images_from_dir(ASSETS_PATH)
+    if assets_paths["fotos_nao_conformidades"]:
+        process_images(assets_paths["fotos_nao_conformidades"])
+        images_nc_dict = get_images_from_dir(assets_paths["fotos_nao_conformidades"])
+        
+        images_nc = []
+        for folder_images in images_nc_dict.values():
+            images_nc.extend(folder_images)
+        
+        if images_nc:
+            df_ncs = get_non_conformities()
+            captions_nc = build_caption_map(df_ncs)
+            divide_images(document, text_nc, images_nc, captions=captions_nc, block_size=6)
+        else:
+            print("⚠️ Nenhuma imagem encontrada na pasta de não conformidades.")
+    else:
+        print("❌ Não foi possível gerar tabelas de fotos de não conformidades. Verifique a estrutura de pastas.")
 
-    if "fotos_nao_conformidades" in images_by_folder:
-        df_ncs = get_non_conformities()
-        captions_nc = build_caption_map(df_ncs)
-        divide_images(document, text_nc, images_by_folder["fotos_nao_conformidades"], captions=captions_nc, block_size=6)
-
-    if "fotos_condicoes_gerais" in images_by_folder:
-        text_info = document.paragraphs[search_paragraph(document, "APÊNDICE 2 – CONDIÇÕES GERAIS")[-1]]
-        divide_images(document, text_info, images_by_folder["fotos_condicoes_gerais"], captions=None, block_size=6)
+    if assets_paths["fotos_condicoes_gerais"]:
+        process_images(assets_paths["fotos_condicoes_gerais"])
+        images_cond_dict = get_images_from_dir(assets_paths["fotos_condicoes_gerais"])
+        
+        images_cond = []
+        for folder_images in images_cond_dict.values():
+            images_cond.extend(folder_images)
+        
+        if images_cond:
+            text_info = document.paragraphs[search_paragraph(document, "APÊNDICE 2 – CONDIÇÕES GERAIS")[-1]]
+            divide_images(document, text_info, images_cond, captions=None, block_size=6)

@@ -58,6 +58,7 @@ def generate_commercial_report():
         ("Não conformidades", lambda: create_non_conformities_table(document, "Tabela 1 - Lista de NCs da Loja de atendimento {{Municipio}}.")),
         ("Quantidade de Atendimentos", lambda: create_quantity_service_table(document, analysis_result)),
         ("Motivo de Encerramento", lambda: create_late_service_reason_table(document, analysis_result)),
+        ("Inserir seção de Condições gerais", lambda: insert_general_condition_section(document, "APÊNDICE 1 - NÃO CONFORMIDADES")),
         ("Inserir imagens", lambda: create_all_appendix_images(document, document.paragraphs[search_paragraph(document,"APÊNDICE 1 - NÃO CONFORMIDADES")[-1]])),
         ("Substituir placeholders", lambda: substitute_placeholders(document)),
         ("Substituir placeholders (Especificos de Comercial)", lambda: substitute_placeholders(document, excel_data=analysis_result)),
