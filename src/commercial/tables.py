@@ -16,7 +16,7 @@ def create_quantity_service_table(document, analysis_result, text="Tabela 2 - Qu
 
 
 def create_late_service_reason_table(document, analysis_result, text="Tabela 3 - Motivo do encerramento"):
-    """"""
+    """Cria a tabela 3 relativa a motivos descritos dos atendimentos atrasados"""
     reasons_counts = analysis_result["Contagem Motivos Fora do Prazo"]
     sorted_reasons = sorted(reasons_counts.items(), key=lambda x: x[1], reverse=True)
 

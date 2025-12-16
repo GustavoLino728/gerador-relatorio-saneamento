@@ -6,6 +6,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.text.paragraph import Paragraph
 from unidecode import unidecode
 from common.excel import get_inspections_data
 from common.paths import DATA_PATH, REPORTS_PATH, ASSETS_PATH
@@ -240,12 +241,22 @@ def to_rows_data(data, subtitle=None):
     
     return rows
 
-def insert_text_after_position(document, position_to_insert, text_to_insert, font_size=10, bold=False, alignment=WD_ALIGN_PARAGRAPH.CENTER, occurrence_index=0):
+def insert_text_after_position(
+    document,
+    position_to_insert,
+    text_to_insert,
+    font_size=10,
+    bold=False,
+    alignment=WD_ALIGN_PARAGRAPH.LEFT,
+    occurrence_index=0,
+):
     """
     Insere um parágrafo com texto formatado após uma posição específica no documento.
 
     document: Objeto Document do python-docx
-    position_to_insert: String com o texto de referência para buscar no documento
+    position_to_insert:
+        - String com o texto de referência para buscar no documento, OU
+        - Objeto Paragraph já localizado
     text_to_insert: String com o texto a ser inserido
     font_size: Tamanho da fonte em pontos (padrão: 10)
     bold: Se o texto deve ser negrito (padrão: False)
@@ -253,29 +264,32 @@ def insert_text_after_position(document, position_to_insert, text_to_insert, fon
     occurrence_index: Índice da ocorrência a usar caso haja múltiplas (padrão: 0 = primeira ocorrência)
     """
 
-    index = search_paragraph(document, position_to_insert)
-    
-    if not index:
-        print(f"⚠️ Texto '{position_to_insert}' não encontrado no documento.")
-        return None
-    
-    if occurrence_index >= len(index):
-        occurrence_index = 0
-    
-    paragraph_index = index[occurrence_index]
-    reference_paragraph = document.paragraphs[paragraph_index]
-    
+    if isinstance(position_to_insert, Paragraph):
+        reference_paragraph = position_to_insert
+    else:
+        index_list = search_paragraph(document, position_to_insert)
+
+        if not index_list:
+            print(f"⚠️ Texto '{position_to_insert}' não encontrado no documento.")
+            return None
+
+        if occurrence_index >= len(index_list):
+            occurrence_index = 0
+
+        paragraph_index = index_list[occurrence_index]
+        reference_paragraph = document.paragraphs[paragraph_index]
+
     new_paragraph = document.add_paragraph()
-    
+
     if alignment:
         new_paragraph.alignment = alignment
-    
+
     run = new_paragraph.add_run(text_to_insert)
     run.font.size = Pt(font_size)
     run.bold = bold
 
     reference_paragraph._element.addnext(new_paragraph._element)
-    
+
     return new_paragraph
 
 def insert_blank_lines(document, position_to_insert, n_lines=1):
@@ -331,9 +345,7 @@ def insert_table_7_text(document):
         insert_text = "Tabela 7 - Parâmetros da qualidade do efluente."
         search_text = "Os parâmetros sobre a qualidade do esgoto estão dispostos na Tabela 7."
         
-    insert_position = document.paragraphs[search_paragraph(document, search_text)[0]]
-    insert_text_after_position(document, insert_position, text_to_insert=insert_text, bold=True, alignment=WD_ALIGN_PARAGRAPH.CENTER)
-
+    insert_text_after_position(document, search_text, text_to_insert=insert_text, bold=True, alignment=WD_ALIGN_PARAGRAPH.CENTER)
 
 
 def decide_report_type():
